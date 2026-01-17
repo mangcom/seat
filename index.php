@@ -135,7 +135,9 @@ $plans = $stmt->fetchAll();
 
                         <div class="mb-3">
                             <label class="form-label">จำนวนที่นั่งต่อแถว (ค่าเริ่มต้น)</label>
-                            <input type="number" name="rows" class="form-control" value="30" min="1">
+                            <input type="number" name="rows" class="form-control" value="20" min="1" max="50" 
+       oninput="if(this.value > 50) this.value = 50;" 
+       required>
                         </div>
                     </div>
                     <div class="modal-footer border-0 pt-0">

@@ -57,27 +57,78 @@ $colorPalette = [
             width: 40px; text-align: center; flex-shrink: 0;
             user-select: none; background: #f8f9fa; border-radius: 4px; padding: 2px 0; border: 1px solid #ddd;
         }
+/* ปรับแต่งรูปทรงที่นั่งให้สมส่วน (Square Box) */
+.seat {
+    /* 1. ปรับขนาดเป็นแนวตั้ง (Width น้อยกว่า Height) */
+    width: 60px;         /* ขยายความกว้างนิดหน่อยเพื่อให้ชื่อยาวๆ แสดงได้ดีขึ้น */
+    height: 82px;        /* เพิ่มความสูง (เดิม 54px) เพื่อให้มีพื้นที่ด้านบน/ล่าง */
+    margin: 4px;         
+    
+    /* 2. สไตล์เดิม */
+    background-color: #ffffff; /* เปลี่ยนเป็นขาวล้วนเพื่อให้ดูสะอาดตาขึ้น */
+    border: 1px solid #dee2e6; 
+    border-radius: 8px;        
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05); 
+    
+    /* 3. จัดการ Layout ภายใน */
+    display: flex;
+    flex-direction: column;
+    justify-content: center; /* จัดกึ่งกลางแนวตั้ง */
+    align-items: center;     
+    position: relative;
+    padding-top: 10px;       /* เพิ่ม Padding ด้านบน เพื่อหนีจากเลขที่นั่ง */
+    padding-bottom: 5px;     /* เพิ่ม Padding ด้านล่าง */
+    gap: 2px;                /* ระยะห่างระหว่าง รูป-ชื่อ-ตำแหน่ง */
+    
+    /* 4. เทคนิคป้องกันกล่องเบี้ยว */
+    flex-shrink: 0;      
+    overflow: hidden;    
+    user-select: none;   
+    cursor: pointer;
+    transition: all 0.2s;
+}
+/* --- เพิ่ม Class เหล่านี้ต่อท้าย .seat --- */
+.seat-block {
+    display: flex;
+    justify-content: center; /* จัดกึ่งกลางถ้าที่นั่งน้อย */
+    align-items: center;
+    gap: 2px;
+    
+    /* ระบบ Scroll แนวนอน */
+    overflow-x: auto; 
+    padding-bottom: 10px;
+    max-width: 100%;      /* ห้ามกว้างเกินจอ */
+    
+    /* ตกแต่ง Scrollbar */
+    scrollbar-width: thin;
+    scrollbar-color: #aaa #f0f0f0;
+}
 
-        .seat {
-            width: 65px; height: 75px; 
-            border: 1px solid rgba(0,0,0,0.1); border-radius: 8px; 
-            display: inline-flex; flex-direction: column; 
-            align-items: center; justify-content: flex-start;
-            position: relative; user-select: none; transition: all 0.2s;
-            white-space: normal; vertical-align: top; cursor: pointer;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05); padding: 4px 2px;
-            overflow: hidden;
-        }
+.theater-row {
+    display: flex;
+    align-items: flex-start; /* เปลี่ยนเป็น start เพื่อให้ Scrollbar ทำงานถูก */
+    margin-bottom: 15px;
+    width: 100%;
+}
+
+.row-number {
+    font-weight: bold;
+    min-width: 40px;
+    text-align: center;
+    margin-top: 15px; /* ดันเลขแถวลงมาให้ตรงกับที่นั่ง */
+    z-index: 10;
+    background: #fff;
+    position: sticky; /* (Optional) ล็อคเลขแถวไว้ */
+    left: 0;
+}
         /* เพิ่ม CSS สำหรับแสดงเลขแถวและที่นั่ง */
 .seat-badge-row {
     position: absolute;
-    top: 2px;
+    top: 2px;           /* ขยับลงมานิดนึง */
     left: 4px;
-    font-size: 9px;
+    font-size: 9px;     /* ตัวเลขใหญ่ขึ้นนิดนึงเพื่อให้อ่านง่าย */
     font-weight: bold;
-    color: #555;
-    opacity: 0.6;
-    pointer-events: none; /* ไม่ให้บังการคลิก */
+    color: #999;
 }
 
 .seat-badge-num {
@@ -86,35 +137,51 @@ $colorPalette = [
     right: 4px;
     font-size: 9px;
     font-weight: bold;
-    color: #555;
-    opacity: 0.6;
-    pointer-events: none;
+    color: #999;
 }
 
-/* ปรับที่นั่งให้รองรับ position absolute */
-.seat {
-    /* ... ค่าเดิม ... */
-    position: relative; /* สำคัญมาก: ต้องมีบรรทัดนี้ */
+
+
+        .seat:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    border-color: #0d6efd;
+    z-index: 5; /* ให้ลอยอยู่เหนือเพื่อนข้างๆ */
 }
-        .seat:hover { border-color: #666; background: #fff !important; }
         .seat.sofa { width: 90px; border-radius: 12px; border-width: 2px; }
         
         /* รูปภาพเล็กในที่นั่ง (วงกลม เหมือนเดิม) */
         .seat-img { 
-            width: 24px; height: 24px; border-radius: 50%; /* วงกลม */
-            object-fit: cover; margin-bottom: 3px; 
-            background: rgba(255,255,255,0.8); border: 1px solid rgba(0,0,0,0.1); flex-shrink: 0;
-        }
+    width: 32px;  /* ขยายรูปให้ใหญ่ขึ้น (เดิม 24px) */
+    height: 32px; 
+    border-radius: 50%; 
+    object-fit: cover; 
+    margin-bottom: 2px; 
+    background: #f8f9fa;
+    border: 1px solid #eee;
+    flex-shrink: 0; /* ห้ามรูปบี้ */
+}
 
-        .seat-name { 
-            font-size: 9px; font-weight: 400; color: #333; line-height: 1.1; width: 100%; text-align: center;
-            overflow: hidden; white-space: nowrap; text-overflow: ellipsis; margin-bottom: 1px;
-        }
-        .seat-role { 
-            font-size: 8.5px; font-weight: 700; color: #000; line-height: 1.1; 
-            max-height: 20px; overflow: hidden; width: 100%; text-align: center;
-            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
-        }
+        .seat-name {
+    font-size: 11px;       /* เพิ่มขนาดตัวอักษรนิดหน่อย (เดิม 10px) */
+    font-weight: 600;
+    line-height: 1.2;
+    text-align: center;
+    width: 95%;            
+    white-space: nowrap;   
+    overflow: hidden;      
+    text-overflow: ellipsis; 
+    color: #333;
+}
+        .seat-role {
+    font-size: 9px;        /* เพิ่มขนาด (เดิม 8px) */
+    color: #777;
+    width: 90%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: center;
+}
 
         .status-reserved { border: 2px solid #ffc107 !important; position: relative; }
         .status-reserved::after { content: "จอง"; position: absolute; top: -5px; right: -5px; background: #ffc107; color: black; font-size: 8px; padding: 1px 3px; border-radius: 4px; }
@@ -193,6 +260,11 @@ $colorPalette = [
 <div class="floating-toolbar">
     <h6 class="fw-bold"><i class="bi bi-tools"></i> เครื่องมือ</h6>
     <button onclick="exportImage()" class="btn btn-primary btn-sm w-100 mb-2"><i class="bi bi-camera"></i> Save Image</button>
+     <div class="d-inline-flex align-items-center bg-white border rounded px-2 ms-2" style="height: 38px;">
+    <i class="bi bi-zoom-out text-secondary small"></i>
+    <input type="range" class="form-range mx-2" min="30" max="80" value="50" id="zoomSlider" style="width: 100px; cursor: pointer;">
+    <i class="bi bi-zoom-in text-secondary small"></i>
+</div>
     <div class="dropdown d-inline-block ms-2">
     <button class="btn btn-outline-dark dropdown-toggle" type="button" data-bs-toggle="dropdown">
         <i class="bi bi-printer"></i> พิมพ์สติกเกอร์
@@ -801,6 +873,24 @@ function printSelected() {
     // ออกจากโหมดเลือกหลังสั่งพิมพ์
     toggleSelectMode();
 }
+// --- ส่วนที่เพิ่ม: ฟังก์ชันปรับขนาด (Zoom) ---
+    const zoomSlider = document.getElementById('zoomSlider');
+    if(zoomSlider) {
+        zoomSlider.addEventListener('input', function(e) {
+            const size = e.target.value + 'px';
+            const fontSize = (e.target.value / 3.5) + 'px'; // คำนวณขนาดตัวอักษร
+            
+            // ปรับทุกที่นั่งในหน้าจอ
+            document.querySelectorAll('.seat').forEach(seat => {
+                seat.style.width = size;
+                seat.style.height = size;
+                
+                // ปรับขนาดตัวหนังสือชื่อ
+                const nameDiv = seat.querySelector('.seat-name');
+                if(nameDiv) nameDiv.style.fontSize = fontSize;
+            });
+        });
+    }
 </script>
 
 </body>

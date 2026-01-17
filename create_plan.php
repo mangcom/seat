@@ -2,7 +2,7 @@
 // ส่วนที่เพิ่ม 1: รับค่าจากหน้า Index (Modal)
 $pre_name = $_POST['plan_name'] ?? '';
 $pre_date = $_POST['plan_date'] ?? ''; // รับวันที่มาด้วย
-$pre_rows = $_POST['rows'] ?? 40;
+$pre_rows = $_POST['rows'] ?? 20;
 ?>
 <!DOCTYPE html>
 <html lang="th">
@@ -98,7 +98,9 @@ $pre_rows = $_POST['rows'] ?? 40;
                         </div>
                         <div class="col-md-4">
                             <input type="number" name="seats_per_row" class="form-control border-primary fw-bold text-center" 
-                                   value="<?php echo htmlspecialchars($pre_rows); ?>" required>
+                                   value="<?php echo htmlspecialchars($pre_rows); ?>" min="10" max="50" 
+       oninput="if(this.value > 50) this.value = 50;" 
+       required>
                         </div>
                     </div>
                 </div>
@@ -151,7 +153,7 @@ $pre_rows = $_POST['rows'] ?? 40;
                     </div>
                     <div class="col-md-2">
                         <label class="form-label small text-muted">จำนวนแถว</label>
-                        <input type="number" name="exec_groups[${execCount}][rows]" class="form-control text-center" value="1" min="1" required>
+                        <input type="number" name="exec_groups[${execCount}][rows]" class="form-control text-center" value="1" max="10" min="1" required>
                     </div>
                     <div class="col-md-3">
                         <label class="form-label small text-muted">ที่นั่งต่อแถว</label>
