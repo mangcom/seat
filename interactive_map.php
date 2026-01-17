@@ -129,6 +129,24 @@ $colorPalette = [
             padding: 20px; width: 260px; /* ขยายความกว้างกล่อง */
             text-align: center; pointer-events: none;
         }
+        /* โหมดเลือกพิมพ์ */
+.seat.selecting {
+    border: 2px solid #ccc;
+    cursor: pointer;
+}
+.seat.selected {
+    border: 2px solid #0d6efd !important;
+    background-color: #e7f1ff !important;
+    transform: scale(1.05);
+    box-shadow: 0 0 5px rgba(13, 110, 253, 0.5);
+}
+/* ซ่อน Checkbox เดิมๆ ถ้ามี */
+#print-toolbar {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    background: #343a40; color: white; padding: 10px 20px;
+    border-radius: 30px; box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    display: none; z-index: 1000; align-items: center; gap: 15px;
+}
         #tooltip-img { 
             width: 160px; /* เพิ่มขนาดเป็น 1 เท่าตัว (เดิม 80px) */
             height: 160px; 
@@ -175,7 +193,18 @@ $colorPalette = [
 <div class="floating-toolbar">
     <h6 class="fw-bold"><i class="bi bi-tools"></i> เครื่องมือ</h6>
     <button onclick="exportImage()" class="btn btn-primary btn-sm w-100 mb-2"><i class="bi bi-camera"></i> Save Image</button>
+    <div class="dropdown d-inline-block ms-2">
+    <button class="btn btn-outline-dark dropdown-toggle" type="button" data-bs-toggle="dropdown">
+        <i class="bi bi-printer"></i> พิมพ์สติกเกอร์
+    </button>
+    <ul class="dropdown-menu">
+        <li><a class="dropdown-item" href="#" onclick="printAll()">พิมพ์ทั้งหมด (ทั้งผัง)</a></li>
+        <li><a class="dropdown-item" href="#" onclick="toggleSelectMode()">เลือกพิมพ์บางคน...</a></li>
+    </ul>
+</div>
+    <div class="mt-3">
     <a href="index.php" class="btn btn-outline-secondary btn-sm w-100 mb-2">กลับหน้าหลัก</a>
+</div>
 </div>
 
 <div class="container-fluid">
@@ -393,7 +422,13 @@ $colorPalette = [
         </div>
     </div>
 </div>
-
+<div id="print-toolbar">
+    <span>เลือกแล้ว <b id="sel-count">0</b> รายชื่อ</span>
+    <button class="btn btn-sm btn-light text-dark fw-bold" onclick="printSelected()">
+        <i class="bi bi-printer-fill"></i> พิมพ์ที่เลือก
+    </button>
+    <button class="btn btn-sm btn-outline-light" onclick="toggleSelectMode()">ยกเลิก</button>
+</div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     // --- 1. Tooltip Logic ---
@@ -625,6 +660,147 @@ $colorPalette = [
             });
         }
     }
+
+    let isSelectionMode = false;
+let selectedSeats = new Set();
+
+// 1. เริ่ม/หยุด โหมดเลือก
+function toggleSelectMode() {
+    isSelectionMode = !isSelectionMode;
+    selectedSeats.clear();
+    updateSelectionUI();
+
+    const toolbar = document.getElementById('print-toolbar');
+    const seats = document.querySelectorAll('.seat:not(.ghost)');
+
+    if (isSelectionMode) {
+        toolbar.style.display = 'flex';
+        seats.forEach(el => {
+            el.classList.add('selecting');
+            // ปิด onclick เดิมชั่วคราว (แก้ไข Modal) โดยการดัก Event ที่ Capture Phase
+            el.addEventListener('click', seatSelectionHandler, true);
+        });
+        // ปิด Sortable ชั่วคราว (ถ้าทำได้) หรือแจ้งเตือน
+    } else {
+        toolbar.style.display = 'none';
+        seats.forEach(el => {
+            el.classList.remove('selecting', 'selected');
+            el.removeEventListener('click', seatSelectionHandler, true);
+        });
+    }
+}
+
+// 2. จัดการการคลิก (Select/Deselect)
+function seatSelectionHandler(e) {
+    if (!isSelectionMode) return;
+
+    // หยุดไม่ให้ Modal เด้งขึ้นมา
+    e.stopPropagation();
+    e.preventDefault();
+
+    const seat = e.currentTarget;
+    const id = seat.getAttribute('data-id');
+
+    if (selectedSeats.has(id)) {
+        selectedSeats.delete(id);
+        seat.classList.remove('selected');
+    } else {
+        selectedSeats.add(id);
+        seat.classList.add('selected');
+    }
+    updateSelectionUI();
+}
+
+function updateSelectionUI() {
+    document.getElementById('sel-count').innerText = selectedSeats.size;
+}
+
+// 3. ฟังก์ชันดึงข้อมูลจากหน้าจอและส่งไปพิมพ์
+function gatherSeatData(onlySelected = false) {
+    const seats = document.querySelectorAll('.seat:not(.ghost)');
+    let data = [];
+
+    seats.forEach(seat => {
+        // ถ้าเลือกโหมดเฉพาะที่เลือก แล้วที่นั่งนี้ไม่ได้เลือก -> ข้าม
+        if (onlySelected && !selectedSeats.has(seat.getAttribute('data-id'))) return;
+
+        // ดึงข้อมูลจาก DOM ที่เรา render ไว้
+        // หมายเหตุ: ต้องมั่นใจว่าใน renderSeat() มี class เหล่านี้อยู่
+        const name = seat.querySelector('.d-name')?.value || seat.innerText; 
+        const role = seat.querySelector('.d-role')?.value || '';
+        const rowTxt = seat.querySelector('.seat-badge-row')?.innerText.replace('R', '') || '-';
+        const seatTxt = seat.querySelector('.seat-badge-num')?.innerText.replace('#', '') || '-';
+
+        // กรองเฉพาะที่มีคนนั่ง (ไม่ว่าง/ไม่จอง) หรือตามต้องการ
+        const status = seat.querySelector('.d-status')?.value;
+        // ถ้า status เป็น empty อาจจะไม่พิมพ์ หรือพิมพ์บัตรเปล่า แล้วแต่ตกลง
+        // ในที่นี้สมมติพิมพ์หมดถ้ามีชื่อ
+
+        data.push({
+            name: name,
+            role: role,
+            rowNo: rowTxt,
+            seatNo: seatTxt
+        });
+    });
+    return data;
+}
+
+// 4. ส่งข้อมูลไปหน้า print_stickers.php (POST)
+function sendToPrint(guests) {
+    if(guests.length === 0) {
+        Swal.fire('ไม่มีรายการ', 'กรุณาเลือกที่นั่งอย่างน้อย 1 ที่', 'warning');
+        return;
+    }
+
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = 'print_stickers.php';
+    form.target = '_blank'; // เปิดแท็บใหม่
+
+    // ส่ง JSON ไป
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = 'json_data'; // หมายเหตุ: PHP รับแบบ Raw POST body ก็ได้ หรือรับแบบ form field ก็ได้
+    // ในโค้ด PHP ด้านบนผมเขียนรับ raw body แต่ถ้าส่งแบบ form ปกติ ต้องแก้ PHP นิดหน่อย
+    // เพื่อความง่าย ขอเปลี่ยนวิธีส่งเป็น fetch + blob หรือแก้ PHP ให้รับ form
+    // เอาวิธี Form + JSON String ดีกว่า ง่ายสุด
+
+    // ** แก้ PHP ด้านบนนิดนึง ให้รับ $_POST['json_data'] ได้ด้วย **
+}
+
+// --- แก้ไขฟังก์ชัน sendToPrint ใหม่ เพื่อให้เข้ากับ PHP ---
+function postData(url, data) {
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = url;
+    form.target = '_blank';
+
+    const jsonInput = document.createElement('input');
+    jsonInput.type = 'hidden';
+    jsonInput.name = 'payload'; // ชื่อ field
+    jsonInput.value = JSON.stringify(data);
+    form.appendChild(jsonInput);
+
+    document.body.appendChild(form);
+    form.submit();
+    document.body.removeChild(form);
+}
+
+function printAll() {
+    const guests = gatherSeatData(false); // เอาทั้งหมด
+    const title = document.getElementById('pageTitle').innerText;
+    postData('print_stickers.php', { title: title, guests: guests });
+}
+
+function printSelected() {
+    const guests = gatherSeatData(true); // เอาเฉพาะที่เลือก
+    const title = document.getElementById('pageTitle').innerText;
+    postData('print_stickers.php', { title: title, guests: guests });
+
+    // ออกจากโหมดเลือกหลังสั่งพิมพ์
+    toggleSelectMode();
+}
 </script>
 
 </body>
