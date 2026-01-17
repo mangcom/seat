@@ -1,5 +1,5 @@
 <?php
-// api_update_guest.php
+session_start();
 error_reporting(E_ALL & ~E_DEPRECATED & ~E_NOTICE); // ปิดการแจ้งเตือนเรื่องทศนิยม (Deprecated)
 ini_set('display_errors', 0); // ห้ามแสดง Error ออกทางหน้าจอ (เพื่อไม่ให้ JSON พัง)
 require 'db.php';
@@ -34,6 +34,14 @@ $data = $stmt->fetch();
 
 if (!$data) {
     echo json_encode(['success' => false, 'error' => 'Guest not found']);
+    exit;
+}
+$current_user = $_SESSION['user_id'] ?? 0;
+$role = $_SESSION['role'] ?? 'guest';
+
+// ถ้าไม่ใช่ Admin และ ไม่ใช่เจ้าของผัง -> ห้ามแก้ไข!
+if ($role !== 'admin' && $data['created_by'] != $current_user) {
+    echo json_encode(['success' => false, 'error' => 'Unauthorized access']);
     exit;
 }
 
