@@ -1,6 +1,12 @@
 <?php
 // save_initial_plan.php
+session_start();
 require 'db.php';
+
+// ต้อง Login ก่อนถึงจะสร้างได้
+if (!isset($_SESSION['user_id'])) {
+    die(json_encode(['success' => false, 'message' => 'กรุณาเข้าสู่ระบบก่อน']));
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
@@ -12,8 +18,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $capacity = !empty($_POST['total_capacity']) ? intval($_POST['total_capacity']) : 0;
         $seatsPerRow = !empty($_POST['seats_per_row']) ? intval($_POST['seats_per_row']) : 40;
 
-        $stmt = $pdo->prepare("INSERT INTO plans (name, total_capacity, seats_per_row) VALUES (?, ?, ?)");
-        $stmt->execute([$planName, $capacity, $seatsPerRow]);
+        $stmt = $pdo->prepare("INSERT INTO plans (name, total_capacity, seats_per_row, created_by) VALUES (?, ?, ?, ?)");
+        $stmt->execute([$planName, $capacity, $seatsPerRow, $_SESSION['user_id']]);
         $plan_id = $pdo->lastInsertId();
 
         // ---------------------------------------------------------

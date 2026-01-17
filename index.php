@@ -1,7 +1,8 @@
 <?php
+session_start();
 require 'db.php';
 
-// ฟังก์ชันแปลงวันที่เป็นภาษาไทย
+// ฟังก์ชันแปลงวันที่ (คงเดิมไว้)
 function thai_date($strDate) {
     if (!$strDate) return "ไม่ระบุวันที่";
     $strYear = date("Y",strtotime($strDate))+543;
@@ -12,9 +13,30 @@ function thai_date($strDate) {
     return "$strDay $strMonthThai $strYear";
 }
 
-// --- ส่วนที่ 1: ดึงข้อมูลผัง (ลบส่วน POST create_plan ออกไปแล้ว) ---
-$sql = "SELECT * FROM plans WHERE is_active = 1 AND (is_deleted = 0 OR is_deleted IS NULL) ORDER BY plan_date DESC, id DESC";
-$stmt = $pdo->query($sql);
+// --- ส่วนที่แก้ไข: กรองการแสดงผลตามสิทธิ์ ---
+$user_id = $_SESSION['user_id'] ?? 0;
+$role = $_SESSION['role'] ?? 'guest';
+
+if ($role == 'admin') {
+    // 1. Admin: เห็นทั้งหมด (รวมที่ Active=0 และ Deleted=1 เพื่อจัดการได้)
+    // แต่หน้า index ปกติเราอาจจะโชว์เฉพาะที่ยังไม่ลบก็ได้ (แล้วแต่ตกลง)
+    // เอาแบบ Admin เห็นทุกอย่างที่ User ทั่วไปเห็น + ของที่ User คนอื่นสร้าง
+    $sql = "SELECT * FROM plans WHERE (is_deleted = 0 OR is_deleted IS NULL) ORDER BY plan_date DESC, id DESC";
+    $params = [];
+
+} elseif ($role == 'user') {
+    // 2. User: เห็นเฉพาะ "ของตัวเอง" (created_by = ฉัน) และยังไม่ลบ
+    $sql = "SELECT * FROM plans WHERE created_by = ? AND (is_deleted = 0 OR is_deleted IS NULL) ORDER BY plan_date DESC, id DESC";
+    $params = [$user_id];
+
+} else {
+    // 3. Guest: เห็นเฉพาะที่ "เปิดใช้งาน (Active)" และยังไม่ลบ
+    $sql = "SELECT * FROM plans WHERE is_active = 1 AND (is_deleted = 0 OR is_deleted IS NULL) ORDER BY plan_date DESC, id DESC";
+    $params = [];
+}
+
+$stmt = $pdo->prepare($sql);
+$stmt->execute($params);
 $plans = $stmt->fetchAll();
 ?>
 
@@ -45,15 +67,46 @@ $plans = $stmt->fetchAll();
 </head>
 <body>
 
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4 shadow-sm">
         <div class="container">
-            <a class="navbar-brand fw-bold" href="#">
-                <i class="bi bi-grid-3x3-gap-fill text-warning"></i> Seating Plan
+            <a class="navbar-brand fw-bold" href="index.php">
+                <i class="bi bi-grid-3x3-gap-fill"></i> ระบบผังที่นั่ง
             </a>
-            <div class="ms-auto">
-                <a href="login.php" class="btn btn-outline-light btn-sm">
-                    <i class="bi bi-shield-lock"></i> Admin Login
-                </a>
+
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto align-items-center">
+                    
+                    <?php if (isset($_SESSION['user_id'])): ?>
+                        <li class="nav-item me-3 text-white">
+                            <span class="text-secondary small">สวัสดี,</span> 
+                            <span class="fw-bold"><?php echo htmlspecialchars($_SESSION['username']); ?></span>
+                        </li>
+
+                        <li class="nav-item me-2">
+                            <a href="admin_dashboard.php" class="btn btn-outline-light btn-sm">
+                                <i class="bi bi-speedometer2"></i> จัดการหลังบ้าน
+                            </a>
+                        </li>
+                        
+                        <li class="nav-item">
+                            <a href="logout.php" class="btn btn-danger btn-sm">
+                                <i class="bi bi-box-arrow-right"></i> ออกจากระบบ
+                            </a>
+                        </li>
+
+                    <?php else: ?>
+                        <li class="nav-item">
+                            <a href="login.php" class="btn btn-primary btn-sm px-4">
+                                <i class="bi bi-box-arrow-in-right"></i> เข้าสู่ระบบ (เจ้าหน้าที่)
+                            </a>
+                        </li>
+                    <?php endif; ?>
+
+                </ul>
             </div>
         </div>
     </nav>
@@ -64,9 +117,11 @@ $plans = $stmt->fetchAll();
                 <h2 class="fw-bold text-dark">รายการผังที่นั่ง</h2>
                 <p class="text-muted mb-0">จัดการผังที่นั่งตามวันที่จัดงาน</p>
             </div>
+            <?php if(isset($_SESSION['user_id'])): ?>
             <button class="btn btn-create px-4 py-2 shadow-sm rounded-pill" data-bs-toggle="modal" data-bs-target="#createModal">
                 <i class="bi bi-plus-lg"></i> สร้างผังใหม่
             </button>
+            <?php endif; ?>
         </div>
 
         <hr class="mb-4">
@@ -74,6 +129,15 @@ $plans = $stmt->fetchAll();
         <div class="row g-4">
             <?php if (count($plans) > 0): ?>
                 <?php foreach ($plans as $plan): ?>
+                    <?php 
+                        // --- 1. เช็คสิทธิ์ (Logic เดียวกับ Dashboard) ---
+                        $is_login = isset($_SESSION['user_id']);
+                        $is_admin = ($is_login && $_SESSION['role'] == 'admin');
+                        $is_owner = ($is_login && $_SESSION['user_id'] == $plan['created_by']);
+                        
+                        // ใครมีสิทธิ์แก้? (Admin หรือ เจ้าของผังนี้)
+                        $can_edit = ($is_admin || $is_owner);
+                    ?>
                 <div class="col-12 col-sm-6 col-md-4 col-lg-3" id="card-plan-<?php echo $plan['id']; ?>">
                     <div class="card plan-card shadow-sm h-100">
                         <a href="interactive_map.php?id=<?php echo $plan['id']; ?>" class="text-decoration-none">
@@ -91,15 +155,19 @@ $plans = $stmt->fetchAll();
                             </div>
                         </a>
                         <div class="card-footer bg-white border-top d-flex justify-content-between py-2">
+                            <?php if ($can_edit): ?>
                             <button class="action-btn btn-edit" onclick="renamePlan(<?php echo $plan['id']; ?>, '<?php echo htmlspecialchars($plan['name']); ?>')" title="แก้ไขชื่อ">
                                 <i class="bi bi-pencil-square"></i> แก้ไข
                             </button>
+                            <?php endif; ?>
                             <a href="interactive_map.php?id=<?php echo $plan['id']; ?>" class="action-btn text-decoration-none" title="พิมพ์/ส่งออก" target="_blank">
                                 <i class="bi bi-printer"></i> พิมพ์
                             </a>
+                                <?php if ($can_edit): ?>
                             <button class="action-btn btn-delete" onclick="deletePlan(<?php echo $plan['id']; ?>)" title="ลบแผนผัง">
                                 <i class="bi bi-trash"></i> ลบ
                             </button>
+                            <?php endif; ?>
                         </div>
                     </div>
                 </div>
@@ -135,8 +203,8 @@ $plans = $stmt->fetchAll();
 
                         <div class="mb-3">
                             <label class="form-label">จำนวนที่นั่งต่อแถว (ค่าเริ่มต้น)</label>
-                            <input type="number" name="rows" class="form-control" value="20" min="1" max="50" 
-       oninput="if(this.value > 50) this.value = 50;" 
+                            <input type="number" name="rows" class="form-control" value="20" min="1" max="30" 
+       oninput="if(this.value > 30) this.value = 30;" 
        required>
                         </div>
                     </div>

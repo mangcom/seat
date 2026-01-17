@@ -1,5 +1,11 @@
 .env
 /uploads/*
+/oldfile/*
+delete_plan.php
+save_structure.php
+function.php
+manage_guests.php
+setup_admin.php
 *.7z
 *2.php
 *1.php

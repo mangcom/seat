@@ -98,8 +98,8 @@ $pre_rows = $_POST['rows'] ?? 20;
                         </div>
                         <div class="col-md-4">
                             <input type="number" name="seats_per_row" class="form-control border-primary fw-bold text-center" 
-                                   value="<?php echo htmlspecialchars($pre_rows); ?>" min="10" max="50" 
-       oninput="if(this.value > 50) this.value = 50;" 
+                                   value="<?php echo htmlspecialchars($pre_rows); ?>" min="10" max="30" 
+       oninput="if(this.value > 30) this.value = 30;" 
        required>
                         </div>
                     </div>
@@ -157,7 +157,7 @@ $pre_rows = $_POST['rows'] ?? 20;
                     </div>
                     <div class="col-md-3">
                         <label class="form-label small text-muted">ที่นั่งต่อแถว</label>
-                        <input type="number" name="exec_groups[${execCount}][seats]" class="form-control text-center" placeholder="เช่น 10" min="1" required>
+                        <input type="number" name="exec_groups[${execCount}][seats]" class="form-control text-center" value="10" max="30" min="1" placeholder="เช่น 10" min="1" required>
                     </div>
                 </div>
             </div>`;
@@ -193,7 +193,7 @@ $pre_rows = $_POST['rows'] ?? 20;
                     </div>
                     <div class="col-md-3">
                         <label class="form-label small text-success fw-bold">จำนวน</label>
-                        <input type="number" name="part_groups[${partCount}][quantity]" class="form-control border-success text-center" placeholder="จำนวน" min="1" required>
+                        <input type="number" name="part_groups[${partCount}][quantity]" class="form-control border-success text-center" placeholder="จำนวน" min="1" max="30" value="10" required>
                     </div>
                 </div>
             </div>`;

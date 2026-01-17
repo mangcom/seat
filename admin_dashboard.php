@@ -2,14 +2,24 @@
 session_start();
 require 'db.php';
 
-// เช็คว่า Login หรือยัง ถ้ายังให้เตะไปหน้า Login
+// 1. ตรวจสอบว่า Login หรือยัง? ถ้ายัง ให้เด้งไปหน้า Login
 if (!isset($_SESSION['user_id'])) {
     header("Location: login.php");
     exit;
 }
 
-// ดึงข้อมูลผังทั้งหมด (รวมทั้งที่ Disable ด้วย)
-$stmt = $pdo->query("SELECT * FROM plans ORDER BY id DESC");
+$user_id = $_SESSION['user_id'];
+$role = $_SESSION['role'];
+
+// 2. Query ตามสิทธิ์
+if ($role == 'admin') {
+    // Admin เห็นทั้งหมด
+    $stmt = $pdo->query("SELECT * FROM plans ORDER BY id DESC");
+} else {
+    // User เห็นแค่ของตัวเอง (created_by = ฉัน)
+    $stmt = $pdo->prepare("SELECT * FROM plans WHERE created_by = ? ORDER BY id DESC");
+    $stmt->execute([$user_id]);
+}
 $plans = $stmt->fetchAll();
 ?>
 <!DOCTYPE html>
@@ -27,6 +37,9 @@ $plans = $stmt->fetchAll();
     <div class="container">
         <span class="navbar-brand mb-0 h1"><i class="bi bi-speedometer2"></i> Admin Dashboard</span>
         <div>
+            <a href="admin_users.php" class="btn btn-warning btn-sm me-2">
+                <i class="bi bi-people-fill"></i> จัดการผู้ใช้
+            </a>
             <span class="text-white me-3">สวัสดี, <?php echo htmlspecialchars($_SESSION['username']); ?></span>
             <a href="logout.php" class="btn btn-sm btn-outline-danger">ออกจากระบบ</a>
         </div>
@@ -52,6 +65,11 @@ $plans = $stmt->fetchAll();
                 </thead>
                 <tbody>
 <?php foreach($plans as $p): 
+    // --- 1. เช็คสิทธิ์ก่อน ---
+    $is_admin = (isset($_SESSION['role']) && $_SESSION['role'] == 'admin');
+    $is_owner = (isset($_SESSION['user_id']) && $_SESSION['user_id'] == $p['created_by']);
+    // กฎ: Admin ทำได้ทุกอย่าง, Owner ทำได้แค่ของตัวเอง
+    $can_manage = ($is_admin || $is_owner);
     // ตรวจสอบสถานะ
     $isDeleted = !empty($p['is_deleted']) && $p['is_deleted'] == 1;
     $isActive = $p['is_active'] == 1;

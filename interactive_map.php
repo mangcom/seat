@@ -1,11 +1,26 @@
 <?php
-// ... (ส่วน PHP เชื่อมต่อฐานข้อมูล คงเดิมเหมือนไฟล์ก่อนหน้า) ...
+session_start(); // เริ่ม Session เพื่อเช็ค Login
 require 'db.php';
+
 $plan_id = $_GET['id'] ?? 0;
 
+// ดึงข้อมูล Plan มาก่อน
 $stmt = $pdo->prepare("SELECT * FROM plans WHERE id = ?");
 $stmt->execute([$plan_id]);
 $plan = $stmt->fetch();
+
+if (!$plan) die("ไม่พบแผนผัง");
+
+// --- ตรวจสอบสิทธิ์ (Authorization Logic) ---
+$can_edit = false; // ค่าเริ่มต้นคือ แก้ไม่ได้
+
+if (isset($_SESSION['user_id'])) {
+    if ($_SESSION['role'] == 'admin') {
+        $can_edit = true; // Admin แก้ได้หมด
+    } elseif ($plan['created_by'] == $_SESSION['user_id']) {
+        $can_edit = true; // User แก้ได้เฉพาะของตัวเอง
+    }
+}
 
 $global_seats_per_row = $plan['seats_per_row'] ?: 30;
 
@@ -259,33 +274,43 @@ $colorPalette = [
 
 <div class="floating-toolbar">
     <h6 class="fw-bold"><i class="bi bi-tools"></i> เครื่องมือ</h6>
-    <button onclick="exportImage()" class="btn btn-primary btn-sm w-100 mb-2"><i class="bi bi-camera"></i> Save Image</button>
-     <div class="d-inline-flex align-items-center bg-white border rounded px-2 ms-2" style="height: 38px;">
-    <i class="bi bi-zoom-out text-secondary small"></i>
-    <input type="range" class="form-range mx-2" min="30" max="80" value="50" id="zoomSlider" style="width: 100px; cursor: pointer;">
-    <i class="bi bi-zoom-in text-secondary small"></i>
-</div>
-    <div class="dropdown d-inline-block ms-2">
-    <button class="btn btn-outline-dark dropdown-toggle" type="button" data-bs-toggle="dropdown">
-        <i class="bi bi-printer"></i> พิมพ์สติกเกอร์
-    </button>
-    <ul class="dropdown-menu">
-        <li><a class="dropdown-item" href="#" onclick="printAll()">พิมพ์ทั้งหมด (ทั้งผัง)</a></li>
-        <li><a class="dropdown-item" href="#" onclick="toggleSelectMode()">เลือกพิมพ์บางคน...</a></li>
-    </ul>
-</div>
     <div class="mt-3">
-    <a href="index.php" class="btn btn-outline-secondary btn-sm w-100 mb-2">กลับหน้าหลัก</a>
-</div>
+        <button onclick="exportImage()" class="btn btn-primary btn-sm w-100 mb-2"><i class="bi bi-camera"></i> บันทึกภาพ</button>
+    </div>
+    <?php if ($can_edit): ?>
+    <div class="mt-3">    
+        <button onclick="savePositions()" class="btn btn-success btn-sm w-100 mb-2">💾 บันทึกตำแหน่ง</button>
+    </div>
+    <div class="d-inline-flex align-items-center bg-white border rounded px-2 ms-2" style="height: 38px;">
+        <i class="bi bi-zoom-out text-secondary small"></i>
+            <input type="range" class="form-range mx-2" min="30" max="80" value="50" id="zoomSlider" style="width: 100px; cursor: pointer;">
+        <i class="bi bi-zoom-in text-secondary small"></i>
+    </div>
+    <?php endif; ?>
+    <div class="dropdown d-inline-block ms-2 w-100">
+        <button class="btn btn-outline-dark dropdown-toggle" type="button" data-bs-toggle="dropdown">
+            <i class="bi bi-printer"></i> พิมพ์สติกเกอร์
+        </button>
+        <ul class="dropdown-menu">
+            <li><a class="dropdown-item" href="#" onclick="printAll()">พิมพ์ทั้งหมด (ทั้งผัง)</a></li>
+            <li><a class="dropdown-item" href="#" onclick="toggleSelectMode()">เลือกพิมพ์บางคน...</a></li>
+        </ul>
+    </div>
+
+    <div class="mt-3">
+        <a href="index.php" class="btn btn-outline-secondary btn-sm w-100 mb-2">กลับหน้าหลัก</a>
+    </div>
 </div>
 
 <div class="container-fluid">
     <div class="stage-container" id="chart-area">
         <h3 class="text-center mb-4 fw-bold text-dark sticky-left">
     <span id="pageTitle"><?php echo htmlspecialchars($plan['name']); ?></span>
+    <?php if ($can_edit): ?>
     <button onclick="editPageTitle()" class="btn btn-sm btn-outline-secondary ms-2" style="border:none;">
         <i class="bi bi-pencil"></i>
     </button>
+    <?php endif; ?>
 </h3>
         <div class="stage-box">เวที (Stage)</div>
         
@@ -503,6 +528,9 @@ $colorPalette = [
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+    // 1. รับค่าจาก PHP
+    const PLAN_ID = <?php echo $plan_id; ?>;
+    const CAN_EDIT = <?php echo $can_edit ? 'true' : 'false'; ?>;
     // --- 1. Tooltip Logic ---
     const tooltip = document.getElementById('seat-tooltip');
     const tooltipImg = document.getElementById('tooltip-img');
@@ -678,10 +706,16 @@ $colorPalette = [
     // --- 3. Drag & Drop + Export ---
     const containers = document.querySelectorAll('.sortable-area');
     containers.forEach(el => {
-        new Sortable(el, {
-            group: 'shared', animation: 150, ghostClass: 'bg-light',
-            onEnd: function (evt) { saveOrderGlobal(evt.to.getAttribute('data-group-id')); }
-        });
+        if(CAN_EDIT) {
+            new Sortable(el, {
+                group: 'shared', 
+                animation: 150, 
+                ghostClass: 'bg-light',
+                onEnd: function (evt) { 
+                    saveOrderGlobal(evt.to.getAttribute('data-group-id')); 
+                }
+            });
+        }
     });
 
     function saveOrderGlobal(groupId) {
