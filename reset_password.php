@@ -3,7 +3,7 @@ require 'db.php';
 
 // กำหนด Username และ Password ที่ต้องการ
 $username = 'admin';
-$password = '1234'; // รหัสผ่านใหม่ที่ต้องการ
+$password = 'bnccitconfig'; // รหัสผ่านใหม่ที่ต้องการ
 
 // เข้ารหัสรหัสผ่าน
 $hashed_password = password_hash($password, PASSWORD_DEFAULT);
