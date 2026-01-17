@@ -1,0 +1,6 @@
+.env
+/uploads/*
+*.7z
+*2.php
+*1.php
+/database/seating_db.sql
