@@ -68,6 +68,34 @@ $colorPalette = [
             box-shadow: 0 2px 4px rgba(0,0,0,0.05); padding: 4px 2px;
             overflow: hidden;
         }
+        /* เพิ่ม CSS สำหรับแสดงเลขแถวและที่นั่ง */
+.seat-badge-row {
+    position: absolute;
+    top: 2px;
+    left: 4px;
+    font-size: 9px;
+    font-weight: bold;
+    color: #555;
+    opacity: 0.6;
+    pointer-events: none; /* ไม่ให้บังการคลิก */
+}
+
+.seat-badge-num {
+    position: absolute;
+    top: 2px;
+    right: 4px;
+    font-size: 9px;
+    font-weight: bold;
+    color: #555;
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+/* ปรับที่นั่งให้รองรับ position absolute */
+.seat {
+    /* ... ค่าเดิม ... */
+    position: relative; /* สำคัญมาก: ต้องมีบรรทัดนี้ */
+}
         .seat:hover { border-color: #666; background: #fff !important; }
         .seat.sofa { width: 90px; border-radius: 12px; border-width: 2px; }
         
@@ -163,72 +191,97 @@ $colorPalette = [
         <?php 
         $globalRowCounter = 1;
 
-        function renderSeat($g, $bgColor) {
-            if (isset($g['is_ghost'])) { echo '<div class="seat ghost"></div>'; return; }
+        function renderSeat($g, $bgColor, $rowNo = '', $seatNo = '') {
+    if (isset($g['is_ghost'])) { echo '<div class="seat ghost"></div>'; return; }
 
-            $statusClass = ($g['status'] == 'reserved') ? 'status-reserved' : (($g['status'] == 'empty') ? 'status-empty' : '');
-            $sofaClass = (isset($g['seat_type']) && $g['seat_type'] == 'sofa') ? 'sofa' : '';
-            $style = "background-color: $bgColor;";
-            $sName = htmlspecialchars($g['name']);
-            $sRole = htmlspecialchars($g['role']);
-            $imgSrc = $g['image_path'] ? 'uploads/'.$g['image_path'] : '';
-            
-            echo '
-            <div class="seat '.$sofaClass.' '.$statusClass.'" 
-                 style="'.$style.'" 
-                 data-id="'.$g['id'].'" 
-                 onclick="openEditModal(this)"
-                 onmouseenter="showTooltip(this)" 
-                 onmousemove="moveTooltip(event)" 
-                 onmouseleave="hideTooltip()">
-                
-                <input type="hidden" class="d-name" value="'.$sName.'">
-                <input type="hidden" class="d-role" value="'.$sRole.'">
-                <input type="hidden" class="d-status" value="'.$g['status'].'">
-                <input type="hidden" class="d-img" value="'.$g['image_path'].'">
-                
-                '. ($imgSrc ? '<img src="'.$imgSrc.'" class="seat-img">' : '<div class="seat-img d-flex align-items-center justify-content-center text-muted"><i class="bi bi-person"></i></div>') .'
-                
-                <div class="seat-name display-name">'.$g['name'].'</div>
-                <div class="seat-role display-role">'.$g['role'].'</div>
-            </div>';
-        }
+    $statusClass = ($g['status'] == 'reserved') ? 'status-reserved' : (($g['status'] == 'empty') ? 'status-empty' : '');
+    $sofaClass = (isset($g['seat_type']) && $g['seat_type'] == 'sofa') ? 'sofa' : '';
+    $style = "background-color: $bgColor;";
+    $sName = htmlspecialchars($g['name']);
+    $sRole = htmlspecialchars($g['role']);
+    $imgSrc = $g['image_path'] ? 'uploads/'.$g['image_path'] : '';
+    
+    echo '
+    <div class="seat '.$sofaClass.' '.$statusClass.'" 
+            style="'.$style.'" 
+            data-id="'.$g['id'].'" 
+            onclick="openEditModal(this)"
+            onmouseenter="showTooltip(this)" 
+            onmousemove="moveTooltip(event)" 
+            onmouseleave="hideTooltip()">
+        
+        '. ($rowNo ? '<div class="seat-badge-row">R'.$rowNo.'</div>' : '') .'
+        '. ($seatNo ? '<div class="seat-badge-num">#'.$seatNo.'</div>' : '') .'
+
+        <input type="hidden" class="d-name" value="'.$sName.'">
+        <input type="hidden" class="d-role" value="'.$sRole.'">
+        <input type="hidden" class="d-status" value="'.$g['status'].'">
+        <input type="hidden" class="d-img" value="'.$g['image_path'].'">
+        
+        '. ($imgSrc ? '<img src="'.$imgSrc.'" class="seat-img">' : '<div class="seat-img d-flex align-items-center justify-content-center text-muted"><i class="bi bi-person"></i></div>') .'
+        
+        <div class="seat-name display-name">'.$g['name'].'</div>
+        <div class="seat-role display-role">'.$g['role'].'</div>
+    </div>';
+}
 
         // ... (Functions renderFullRow, renderSplitRow และการ Loop Groups เหมือนเดิมทุกประการ) ...
         // เพื่อความกระชับ ผมขอละส่วน Loop ไว้ตรงนี้ (ใช้โค้ดเดิมจากข้อความที่แล้วได้เลยครับ)
         
         // --- ใส่ส่วน Loop เดิมตรงนี้ (เหมือนข้อความที่แล้ว) ---
         function renderFullRow($guestsInRow, $groupId, $rowIndex, $color, $displayNumber) {
-            echo '<div class="theater-row">';
-            echo '<div class="row-number me-2">'.$displayNumber.'</div>';
-            echo '<div class="seat-block sortable-area" data-group-id="'.$groupId.'" data-row-idx="'.$rowIndex.'-Full">';
-            foreach ($guestsInRow as $g) { renderSeat($g, $color); }
-            echo '</div>';
-            echo '<div class="row-number ms-2">'.$displayNumber.'</div>';
-            echo '</div>';
-        }
+    echo '<div class="theater-row">';
+    echo '<div class="row-number me-2">'.$displayNumber.'</div>';
+    echo '<div class="seat-block sortable-area" data-group-id="'.$groupId.'" data-row-idx="'.$rowIndex.'-Full">';
+    
+    // --- แก้ไขตรงนี้ (เพิ่มตัวนับ $i) ---
+    $i = 1;
+    foreach ($guestsInRow as $g) { 
+        renderSeat($g, $color, $displayNumber, $i); // ส่งค่า $displayNumber และ $i
+        $i++;
+    }
+    // --------------------------------
+    
+    echo '</div>';
+    echo '<div class="row-number ms-2">'.$displayNumber.'</div>';
+    echo '</div>';
+}
 
         function renderSplitRow($guestsInRow, $groupId, $rowIndex, $color, $displayNumber) {
-            $total = count($guestsInRow);
-            if ($total == 0) return;
-            if ($total % 2 != 0) { $guestsInRow[] = ['is_ghost' => true]; $total++; }
+    $total = count($guestsInRow);
+    if ($total == 0) return;
+    if ($total % 2 != 0) { $guestsInRow[] = ['is_ghost' => true]; $total++; }
 
-            $half = $total / 2;
-            $leftSide = array_slice($guestsInRow, 0, $half);
-            $rightSide = array_slice($guestsInRow, $half);
-            
-            echo '<div class="theater-row">';
-            echo '<div class="row-number me-2">'.$displayNumber.'</div>';
-            echo '<div class="seat-block sortable-area" data-group-id="'.$groupId.'" data-row-idx="'.$rowIndex.'-L">';
-            foreach ($leftSide as $g) { renderSeat($g, $color); }
-            echo '</div>';
-            echo '<div class="aisle-gap"></div>';
-            echo '<div class="seat-block sortable-area" data-group-id="'.$groupId.'" data-row-idx="'.$rowIndex.'-R">';
-            foreach ($rightSide as $g) { renderSeat($g, $color); }
-            echo '</div>';
-            echo '<div class="row-number ms-2">'.$displayNumber.'</div>';
-            echo '</div>';
-        }
+    $half = $total / 2;
+    $leftSide = array_slice($guestsInRow, 0, $half);
+    $rightSide = array_slice($guestsInRow, $half);
+    
+    echo '<div class="theater-row">';
+    echo '<div class="row-number me-2">'.$displayNumber.'</div>';
+    
+    // --- แก้ไขตรงนี้ (เพิ่มตัวนับ $i ต่อเนื่องกัน) ---
+    $i = 1;
+    
+    echo '<div class="seat-block sortable-area" data-group-id="'.$groupId.'" data-row-idx="'.$rowIndex.'-L">';
+    foreach ($leftSide as $g) { 
+        renderSeat($g, $color, $displayNumber, $i); 
+        $i++; 
+    }
+    echo '</div>';
+    
+    echo '<div class="aisle-gap"></div>';
+    
+    echo '<div class="seat-block sortable-area" data-group-id="'.$groupId.'" data-row-idx="'.$rowIndex.'-R">';
+    foreach ($rightSide as $g) { 
+        renderSeat($g, $color, $displayNumber, $i); 
+        $i++;
+    }
+    echo '</div>';
+    // ------------------------------------------------
+    
+    echo '<div class="row-number ms-2">'.$displayNumber.'</div>';
+    echo '</div>';
+}
 
         // --- RENDER ZONES (Copy from previous code) ---
         $colorIndex = 0;
