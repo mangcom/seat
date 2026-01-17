@@ -351,27 +351,23 @@ $colorPalette = [
     </div>';
 }
 
-        // ... (Functions renderFullRow, renderSplitRow และการ Loop Groups เหมือนเดิมทุกประการ) ...
-        // เพื่อความกระชับ ผมขอละส่วน Loop ไว้ตรงนี้ (ใช้โค้ดเดิมจากข้อความที่แล้วได้เลยครับ)
+    function renderFullRow($guestsInRow, $groupId, $rowIndex, $color, $displayNumber) {
+        echo '<div class="theater-row">';
+        echo '<div class="row-number me-2">'.$displayNumber.'</div>';
+        echo '<div class="seat-block sortable-area" data-group-id="'.$groupId.'" data-row-idx="'.$rowIndex.'-Full">';
         
-        // --- ใส่ส่วน Loop เดิมตรงนี้ (เหมือนข้อความที่แล้ว) ---
-        function renderFullRow($guestsInRow, $groupId, $rowIndex, $color, $displayNumber) {
-    echo '<div class="theater-row">';
-    echo '<div class="row-number me-2">'.$displayNumber.'</div>';
-    echo '<div class="seat-block sortable-area" data-group-id="'.$groupId.'" data-row-idx="'.$rowIndex.'-Full">';
-    
-    // --- แก้ไขตรงนี้ (เพิ่มตัวนับ $i) ---
-    $i = 1;
-    foreach ($guestsInRow as $g) { 
-        renderSeat($g, $color, $displayNumber, $i); // ส่งค่า $displayNumber และ $i
-        $i++;
+        // --- แก้ไขตรงนี้ (เพิ่มตัวนับ $i) ---
+        $i = 1;
+        foreach ($guestsInRow as $g) { 
+            renderSeat($g, $color, $displayNumber, $i); // ส่งค่า $displayNumber และ $i
+            $i++;
+        }
+        // --------------------------------
+        
+        echo '</div>';
+        echo '<div class="row-number ms-2">'.$displayNumber.'</div>';
+        echo '</div>';
     }
-    // --------------------------------
-    
-    echo '</div>';
-    echo '<div class="row-number ms-2">'.$displayNumber.'</div>';
-    echo '</div>';
-}
 
         function renderSplitRow($guestsInRow, $groupId, $rowIndex, $color, $displayNumber) {
     $total = count($guestsInRow);
@@ -571,123 +567,37 @@ $colorPalette = [
     const noImgPlaceholder = document.getElementById('noImgPlaceholder');
     const fileInput = document.getElementById('fileInput');
 
-    // --- ค้นหา function openEditModal แล้วแก้เป็นแบบนี้ครับ ---
+    function openEditModal(el) {
+        if (typeof CAN_EDIT !== 'undefined' && CAN_EDIT) {
+            if(el.classList.contains('ghost')) return;
+            currentSeatEl = el;
+            
+            // Reset Form
+            document.getElementById('editForm').reset();
+            deleteCheck.checked = false;
+            fileInput.disabled = false;
+            previewImg.style.opacity = '1';
 
-// function openEditModal(seatElement) {
-//     currentSeat = seatElement;
-//     const guestId = seatElement.getAttribute('data-id');
-//     const name = seatElement.getAttribute('data-name');
-//     const role = seatElement.getAttribute('data-role');
-//     const status = seatElement.getAttribute('data-status') || 'normal'; // ค่า default
-//     const image = seatElement.getAttribute('data-image');
-    
-//     // ดึง Element ต่างๆ ใน Modal มาเตรียมไว้
-//     const modalTitle = document.getElementById('editModalLabel');
-//     const inputName = document.getElementById('edit_name');
-//     const inputRole = document.getElementById('edit_role');
-//     const inputStatus = document.getElementById('edit_status');
-//     const inputImage = document.getElementById('edit_image'); // ช่องอัปโหลดไฟล์
-//     const checkDeleteImg = document.getElementById('delete_image_check'); // Checkbox ลบรูป
-//     const btnSave = document.getElementById('btn_save_modal'); // ปุ่มบันทึก
-//     const imgPreview = document.getElementById('current_img_preview'); // รูปตัวอย่าง
-//     const divDeleteImg = document.getElementById('div_delete_image'); // กล่องครอบปุ่มลบรูป
-
-//     // 1. ใส่ข้อมูลลงในฟอร์ม
-//     document.getElementById('edit_guest_id').value = guestId;
-//     inputName.value = name;
-//     inputRole.value = role;
-//     inputStatus.value = status;
-    
-//     // จัดการรูปภาพ preview
-//     if (image && image !== 'null' && image !== '') {
-//         imgPreview.src = 'uploads/' + image;
-//         imgPreview.style.display = 'block';
-//         if(divDeleteImg) divDeleteImg.style.display = 'block';
-//     } else {
-//         imgPreview.style.display = 'none';
-//         if(divDeleteImg) divDeleteImg.style.display = 'none';
-//     }
-    
-//     // เคลียร์ค่า input file และ checkbox
-//     inputImage.value = ''; 
-//     if(checkDeleteImg) checkDeleteImg.checked = false;
-
-//     // =========================================================
-//     // 2. [สำคัญ] ตรวจสอบสิทธิ์ (ถ้าไม่มีสิทธิ์ ให้ปิดการแก้ไข)
-//     // =========================================================
-//     if (typeof CAN_EDIT !== 'undefined' && !CAN_EDIT) {
-//         // --- กรณี: Guest (ดูได้อย่างเดียว) ---
-        
-//         // เปลี่ยนชื่อหัวข้อ
-//         modalTitle.innerText = "รายละเอียด (View Only)";
-//         modalTitle.classList.add('text-secondary');
-
-//         // ล็อคช่องกรอกข้อมูลทั้งหมด
-//         inputName.disabled = true;
-//         inputRole.disabled = true;
-//         inputStatus.disabled = true;
-//         inputImage.disabled = true;
-//         if(checkDeleteImg) checkDeleteImg.disabled = true;
-
-//         // ซ่อนปุ่มบันทึก และส่วนจัดการรูป
-//         if(btnSave) btnSave.style.display = 'none'; 
-//         if(divDeleteImg) divDeleteImg.style.display = 'none'; // ซ่อนปุ่มลบรูป
-//         inputImage.style.display = 'none'; // ซ่อนปุ่ม Choose File
-
-//     } else {
-//         // --- กรณี: Admin/Owner (แก้ไขได้ปกติ) ---
-        
-//         modalTitle.innerText = "แก้ไขข้อมูลที่นั่ง";
-//         modalTitle.classList.remove('text-secondary');
-
-//         // ปลดล็อคช่องกรอกข้อมูล
-//         inputName.disabled = false;
-//         inputRole.disabled = false;
-//         inputStatus.disabled = false;
-//         inputImage.disabled = false;
-//         if(checkDeleteImg) checkDeleteImg.disabled = false;
-
-//         // แสดงปุ่ม
-//         if(btnSave) btnSave.style.display = 'block';
-//         inputImage.style.display = 'block';
-//         // (ส่วนลบรูปแสดงตามเงื่อนไขว่ามีรูปไหมด้านบนแล้ว)
-//     }
-
-//     // เปิด Modal
-//     var myModal = new bootstrap.Modal(document.getElementById('editModal'));
-//     myModal.show();
-// }
-function openEditModal(el) {
-    if (typeof CAN_EDIT !== 'undefined' && CAN_EDIT) {
-        if(el.classList.contains('ghost')) return;
-        currentSeatEl = el;
-        
-        // Reset Form
-        document.getElementById('editForm').reset();
-        deleteCheck.checked = false;
-        fileInput.disabled = false;
-        previewImg.style.opacity = '1';
-
-        // ดึงค่ามาใส่
-        document.getElementById('editId').value = el.getAttribute('data-id');
-        document.getElementById('editName').value = el.querySelector('.d-name').value;
-        document.getElementById('editRole').value = el.querySelector('.d-role').value;
-        document.getElementById('editStatus').value = el.querySelector('.d-status').value;
-        
-        const imgPath = el.querySelector('.d-img').value;
-        
-        if(imgPath && imgPath !== 'null' && imgPath !== '') { 
-            // ใส่ ?t=... เพื่อแก้ Cache รูป preview
-            previewImg.src = 'uploads/' + imgPath + '?t=' + new Date().getTime(); 
-            previewImg.style.display = 'inline-block';
-            noImgPlaceholder.style.display = 'none';
-        } else { 
-            previewImg.style.display = 'none'; 
-            noImgPlaceholder.style.display = 'block';
+            // ดึงค่ามาใส่
+            document.getElementById('editId').value = el.getAttribute('data-id');
+            document.getElementById('editName').value = el.querySelector('.d-name').value;
+            document.getElementById('editRole').value = el.querySelector('.d-role').value;
+            document.getElementById('editStatus').value = el.querySelector('.d-status').value;
+            
+            const imgPath = el.querySelector('.d-img').value;
+            
+            if(imgPath && imgPath !== 'null' && imgPath !== '') { 
+                // ใส่ ?t=... เพื่อแก้ Cache รูป preview
+                previewImg.src = 'uploads/' + imgPath + '?t=' + new Date().getTime(); 
+                previewImg.style.display = 'inline-block';
+                noImgPlaceholder.style.display = 'none';
+            } else { 
+                previewImg.style.display = 'none'; 
+                noImgPlaceholder.style.display = 'block';
+            }
+            
+            modal.show();
         }
-        
-        modal.show();
-    }
     }
 
     deleteCheck.addEventListener('change', function() {
