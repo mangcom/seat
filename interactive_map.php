@@ -310,7 +310,7 @@ $colorPalette = [
         </ul>
     </div>
     <div class="mt-3">
-        <button class="btn btn-warning btn-sm w-100 mb-2" onclick="openStructureModal()">
+        <button class="btn btn-info btn-sm w-100 mb-2" onclick="openStructureModal()">
         <i class="bi bi-gear-fill"></i> จัดจำนวนที่นั่ง
         </button>
     </div>
