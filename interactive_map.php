@@ -241,7 +241,19 @@ $colorPalette = [
         #tooltip-name { font-size: 18px; font-weight: 400; margin-bottom: 5px; color: #333; }
         #tooltip-role { font-size: 16px; font-weight: 700; color: #000; }
 
-        .floating-toolbar { position: fixed; top: 20px; right: 20px; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); z-index: 999; width: 200px;}
+        .floating-toolbar { 
+    position: fixed; 
+    top: 50%;                  /* ให้ขอบบนเริ่มที่ 50% ของจอ */
+    right: 20px;               /* ห่างขอบขวา 20px */
+    transform: translateY(-50%); /* ดึงกลับขึ้นไปครึ่งหนึ่งของความสูงกล่อง เพื่อให้มันอยู่กลางเป๊ะ */
+    
+    background: white; 
+    padding: 15px; 
+    border-radius: 8px; 
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2); 
+    z-index: 999; 
+    width: 200px;
+}
 
         .stage-box {
     width: 80%;               /* ความกว้าง 80% ของพื้นที่ */
@@ -298,7 +310,7 @@ $colorPalette = [
         </ul>
     </div>
     <div class="mt-3">
-        <button class="btn btn-primary btn-sm d-flex align-items-center gap-2" onclick="openStructureModal()">
+        <button class="btn btn-warning btn-sm w-100 mb-2" onclick="openStructureModal()">
         <i class="bi bi-gear-fill"></i> จัดจำนวนที่นั่ง
         </button>
     </div>
@@ -316,7 +328,12 @@ $colorPalette = [
     <button onclick="editPageTitle()" class="btn btn-sm btn-outline-secondary ms-2" style="border:none;">
         <i class="bi bi-pencil"></i>
     </button>
+
     <?php endif; ?>
+    <div class="mt-1 text-secondary" style="font-size: 0.85rem; font-weight: 300;">
+    <i class="bi bi-code-slash me-1"></i> 
+    ออกแบบและพัฒนาโดย นายพรชัย ตุ่นแก้ว วิทยาลัยพณิชยการบางนา
+</div>
 </h3>
         <div class="stage-box">เวที (Stage)</div>
         
