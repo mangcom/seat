@@ -13,7 +13,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 $id = $_POST['guest_id'] ?? 0;
 $name = trim($_POST['name'] ?? '');
-$role = trim($_POST['role'] ?? '');
+$position = trim($_POST['role'] ?? '');
 $status = $_POST['status'] ?? 'normal';
 $deleteImage = isset($_POST['delete_image']) && $_POST['delete_image'] == '1';
 
@@ -113,7 +113,7 @@ if (isset($_FILES['guest_image']) && $_FILES['guest_image']['error'] === UPLOAD_
 
 // อัปเดตลงฐานข้อมูล
 $stmt = $pdo->prepare("UPDATE guests SET name = ?, role = ?, status = ?, image_path = ? WHERE id = ?");
-$result = $stmt->execute([$name, $role, $status, $newImagePathDB, $id]);
+$result = $stmt->execute([$name, $position, $status, $newImagePathDB, $id]);
 
 if ($result) {
         $pdo->commit();
