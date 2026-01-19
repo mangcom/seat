@@ -148,8 +148,8 @@ try {
                 // --- [จุดที่แก้ไข] อัปเดตทั้ง 'name' และ 'quantity' ลงตาราง plan_groups ---
                 // หมายเหตุ: ถ้าใน Database คุณตั้งชื่อ field ว่า seats_in_row ให้แก้คำว่า quantity เป็น seats_in_row นะครับ
                 // แต่โดยปกติจากไฟล์ create_plan น่าจะชื่อ quantity ครับ
-                $stmtGroup = $pdo->prepare("UPDATE plan_groups SET name = ?, quantity = ? WHERE id = ? AND plan_id = ?");
-                $stmtGroup->execute([$newName, $newQty, $groupId, $plan_id]);
+                $stmtGroup = $pdo->prepare("UPDATE plan_groups SET name = ?, seats_in_row = ?,quantity = ? WHERE id = ? AND plan_id = ?");
+                $stmtGroup->execute([$newName,$newQty, $newQty, $groupId, $plan_id]);
 
                 // 2.2 ตรวจสอบจำนวนปัจจุบันในตาราง guests (ของจริง)
                 $stmtCount = $pdo->prepare("SELECT COUNT(*) FROM guests WHERE group_id = ?");
