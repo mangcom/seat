@@ -24,9 +24,10 @@ if (!$id) {
 
 // 1. ดึงข้อมูลเก่า และหาว่า Guest นี้อยู่ใน Plan ID ไหน
 // เชื่อมตาราง guests -> plan_groups -> plans
-$sql = "SELECT g.image_path, pg.plan_id 
+$sql = "SELECT g.image_path, pg.plan_id, p.created_by 
         FROM guests g
         JOIN plan_groups pg ON g.group_id = pg.id
+        JOIN plans p ON pg.plan_id = p.id
         WHERE g.id = ?";
 $stmt = $pdo->prepare($sql);
 $stmt->execute([$id]);
@@ -39,12 +40,14 @@ if (!$data) {
 $current_user = $_SESSION['user_id'] ?? 0;
 $role = $_SESSION['role'] ?? 'guest';
 
-// ถ้าไม่ใช่ Admin และ ไม่ใช่เจ้าของผัง -> ห้ามแก้ไข!
-if ($role !== 'admin' && $data['created_by'] != $current_user) {
-    echo json_encode(['success' => false, 'error' => 'Unauthorized access']);
+// ถ้าไม่ใช่ Admin และ ไม่ใช่เจ้าของผัง -> ห้ามแก้ไข
+if ($user_role !== 'admin' && $data['created_by'] != $current_user) {
+    echo json_encode(['success' => false, 'error' => 'Unauthorized access (Not Owner/Admin)']);
     exit;
 }
 
+try {
+    $pdo->beginTransaction();
 $oldImage = $data['image_path'] ?? null;
 $planId = $data['plan_id']; // ได้รหัสผังแล้ว
 
@@ -113,10 +116,19 @@ $stmt = $pdo->prepare("UPDATE guests SET name = ?, role = ?, status = ?, image_p
 $result = $stmt->execute([$name, $role, $status, $newImagePathDB, $id]);
 
 if ($result) {
-    echo json_encode(['success' => true, 'image_path' => $newImagePathDB]);
-} else {
-    echo json_encode(['success' => false, 'error' => 'Database update failed']);
+        $pdo->commit();
+        echo json_encode(['success' => true, 'image_path' => $newImagePathDB]);
+    } else {
+        $pdo->rollBack();
+        echo json_encode(['success' => false, 'error' => 'Database update failed']);
+    }
+} catch (Exception $e) {
+    $pdo->rollBack();
+    echo json_encode(['success' => false, 'error' => $e->getMessage()]);
 }
+
+
+
 
 // --- ฟังก์ชัน Resize (เหมือนเดิม) ---
 function resizeAndSaveImage($source, $destination, $maxDim) {

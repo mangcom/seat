@@ -263,6 +263,7 @@ $colorPalette = [
     text-transform: uppercase;
 }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body>
 
@@ -295,6 +296,11 @@ $colorPalette = [
             <li><a class="dropdown-item" href="#" onclick="printAll()">พิมพ์ทั้งหมด (ทั้งผัง)</a></li>
             <li><a class="dropdown-item" href="#" onclick="toggleSelectMode()">เลือกพิมพ์บางคน...</a></li>
         </ul>
+    </div>
+    <div class="mt-3">
+        <button class="btn btn-primary btn-sm d-flex align-items-center gap-2" onclick="openStructureModal()">
+        <i class="bi bi-gear-fill"></i> จัดจำนวนที่นั่ง
+        </button>
     </div>
 
     <div class="mt-3">
@@ -434,6 +440,13 @@ $colorPalette = [
                     }
                     $isFirstExecGroup = false; 
                 ?>
+                <?php if ($can_edit): ?>
+        <div class="text-center mt-3 pt-2 border-top">
+            <button onclick="addNewGuest(<?php echo $group['id']; ?>)" class="btn btn-sm btn-outline-primary w-100 border-dashed">
+                <i class="bi bi-plus-circle-dotted"></i> เพิ่มที่นั่งในกลุ่มนี้
+            </button>
+        </div>
+    <?php endif; ?>
             </div>
         <?php endforeach; ?>
 
@@ -458,6 +471,13 @@ $colorPalette = [
                         $globalRowCounter++;
                     }
                 ?>
+                <?php if ($can_edit): ?>
+                <div class="text-center mt-3 pt-2 border-top">
+            <button onclick="addNewGuest(<?php echo $group['id']; ?>)" class="btn btn-sm btn-outline-primary w-100 border-dashed">
+                <i class="bi bi-plus-circle-dotted"></i> เพิ่มที่นั่งในกลุ่มนี้
+            </button>
+        </div>
+    <?php endif; ?>
             </div>
         <?php endforeach; ?>
         
@@ -508,13 +528,183 @@ $colorPalette = [
                             </label>
                         </div>
                     </div>
-
+                    <button type="button" class="btn btn-danger me-auto  btn-sm w-100" onclick="confirmDeleteGuest()">
+                        <i class="bi bi-trash"></i> ลบที่นั่งนี้
+                        </button>
                     <button type="submit" class="btn btn-primary btn-sm w-100">บันทึก</button>
                 </form>
             </div>
         </div>
     </div>
 </div>
+
+<div class="modal fade" id="structureModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title"><i class="bi bi-diagram-3"></i> จัดการโครงสร้างแผนผัง</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="structureForm">
+                    <div class="alert alert-info py-2 mb-3">
+                        <div class="row align-items-center">
+                            <div class="col-md-6">
+                                <label class="fw-bold">จำนวนคอลัมน์สูงสุด (ความกว้างผัง)</label>
+                            </div>
+                            <div class="col-md-6">
+                                <input type="number" name="seats_per_row" class="form-control" 
+                                       value="<?php echo $global_seats_per_row; ?>" min="5" max="100">
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <h6 class="fw-bold mb-3">รายการกลุ่มที่นั่ง (แก้ไขชื่อ หรือ ปรับจำนวน)</h6>
+                    <div id="groupListContainer">
+                        <?php foreach ($raw_groups as $g): 
+                            // นับจำนวนที่นั่งจริงในกลุ่มนี้
+                            $stmtCount = $pdo->prepare("SELECT COUNT(*) FROM guests WHERE group_id = ?");
+                            $stmtCount->execute([$g['id']]);
+                            $currentQty = $stmtCount->fetchColumn();
+                        ?>
+                        <div class="row g-2 mb-2 group-item" data-id="<?php echo $g['id']; ?>">
+                            <div class="col-md-2">
+                                <select name="groups[<?php echo $g['id']; ?>][type]" class="form-select form-select-sm bg-light" disabled>
+                                    <option value="exec" <?php echo $g['zone_type']=='exec'?'selected':''; ?>>ประธาน/VIP</option>
+                                    <option value="part" <?php echo $g['zone_type']=='part'?'selected':''; ?>>ผู้ร่วมงาน</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <input type="text" name="groups[<?php echo $g['id']; ?>][name]" 
+                                       class="form-control form-control-sm" 
+                                       value="<?php echo htmlspecialchars($g['name']); ?>" placeholder="ชื่อกลุ่ม">
+                            </div>
+                            <div class="col-md-3">
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">จำนวน</span>
+                                    <input type="number" name="groups[<?php echo $g['id']; ?>][qty]" 
+                                           class="form-control text-center" 
+                                           value="<?php echo $currentQty; ?>" data-old-qty="<?php echo $currentQty; ?>" min="0">
+                                </div>
+                            </div>
+                            <div class="col-md-1 text-end">
+                                </div>
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
+                    
+                    <div class="text-end mt-2">
+                        <small class="text-muted">* การลดจำนวน จะลบที่นั่งจากท้ายสุดของกลุ่ม</small>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+                <button type="button" class="btn btn-success" onclick="saveStructure()">
+                    <i class="bi bi-save"></i> บันทึกการเปลี่ยนแปลง
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+// ฟังก์ชันเปิด Modal
+function openStructureModal() {
+    var myModal = new bootstrap.Modal(document.getElementById('structureModal'));
+    myModal.show();
+}
+
+// ฟังก์ชันบันทึกข้อมูล (เวอร์ชันปลอดภัย มีการแจ้งเตือนก่อนลบ)
+function saveStructure() {
+    const form = document.getElementById('structureForm');
+    const formData = new FormData(form);
+    
+    // เตรียมข้อมูล
+    const data = {
+        action: 'update_structure',
+        id: <?php echo $plan_id; ?>,
+        seats_per_row: formData.get('seats_per_row'),
+        groups: []
+    };
+
+    let warningMessage = "";
+    let hasReduction = false;
+
+    // วนลูปเก็บข้อมูล และเช็คว่ามีการลดจำนวนหรือไม่
+    document.querySelectorAll('.group-item').forEach(item => {
+        const id = item.getAttribute('data-id');
+        const nameInput = item.querySelector('input[name*="[name]"]');
+        const qtyInput = item.querySelector('input[name*="[qty]"]');
+        
+        const name = nameInput.value;
+        const newQty = parseInt(qtyInput.value) || 0;
+        const oldQty = parseInt(qtyInput.getAttribute('data-old-qty')) || 0;
+
+        // เช็คว่าลดลงไหม?
+        if (newQty < oldQty) {
+            const diff = oldQty - newQty;
+            hasReduction = true;
+            // สร้างข้อความเตือน (ใช้ \n เพื่อขึ้นบรรทัดใหม่)
+            warningMessage += `• กลุ่ม "${name}": จะหายไป ${diff} ที่นั่ง (จากท้ายสุด)\n`;
+        }
+        
+        data.groups.push({
+            id: id,
+            name: name,
+            qty: newQty
+        });
+    });
+
+    // ฟังก์ชันสำหรับส่งข้อมูล (แยกออกมาเรียกใช้)
+    const performSave = () => {
+        // แสดง Loading ระหว่างบันทึก
+        Swal.fire({ title: 'กำลังบันทึก...', didOpen: () => Swal.showLoading() });
+
+        fetch('api_plan_manager.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        })
+        .then(res => res.json())
+        .then(resData => {
+            if (resData.success) {
+                Swal.fire('บันทึกสำเร็จ', 'โครงสร้างผังถูกอัปเดตแล้ว', 'success')
+                .then(() => location.reload());
+            } else {
+                Swal.fire('Error', resData.message || 'บันทึกไม่สำเร็จ', 'error');
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            Swal.fire('Error', 'เกิดข้อผิดพลาดในการเชื่อมต่อ', 'error');
+        });
+    };
+
+    // --- ตัดสินใจว่าจะบันทึกเลย หรือ เตือนก่อน ---
+    if (hasReduction) {
+        // กรณีมีการลดจำนวน -> เตือนก่อน!
+        Swal.fire({
+            title: '⚠️ ข้อมูลบางส่วนจะถูกลบ!',
+            html: `<div class="text-start">คุณมีการปรับลดจำนวนที่นั่ง ซึ่งจะมีผลกระทบดังนี้:<br><pre class="mt-2 text-danger border p-2 bg-light">${warningMessage}</pre>ยืนยันที่จะทำรายการหรือไม่?</div>`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            confirmButtonText: 'ยืนยันการลบ',
+            cancelButtonText: 'ยกเลิก / กลับไปแก้ไข'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                performSave(); // กดยืนยันถึงจะบันทึก
+            }
+        });
+    } else {
+        // กรณีไม่มีการลบ (เพิ่มหรือเท่าเดิม) -> บันทึกเลย
+        performSave();
+    }
+}
+
+</script>
 <div id="print-toolbar">
     <span>เลือกแล้ว <b id="sel-count">0</b> รายชื่อ</span>
     <button class="btn btn-sm btn-light text-dark fw-bold" onclick="printSelected()">
@@ -585,7 +775,9 @@ $colorPalette = [
             document.getElementById('editStatus').value = el.querySelector('.d-status').value;
             
             const imgPath = el.querySelector('.d-img').value;
-            
+            const guestId = el.getAttribute('data-id');
+            currentGuestIdToDelete = guestId;
+
             if(imgPath && imgPath !== 'null' && imgPath !== '') { 
                 // ใส่ ?t=... เพื่อแก้ Cache รูป preview
                 previewImg.src = 'uploads/' + imgPath + '?t=' + new Date().getTime(); 
@@ -923,6 +1115,179 @@ function printSelected() {
             });
         });
     }
+function addNewGuest(groupId) {
+    // แสดง Loading เล็กน้อย หรือกันกดซ้ำ
+    Swal.fire({ title: 'กำลังเพิ่มที่นั่ง...', didOpen: () => Swal.showLoading() });
+
+    fetch('api_plan_manager.php', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ 
+            action: 'add_guest', 
+            id: <?php echo $plan_id; ?>, // ส่ง plan_id ไปเช็คสิทธิ์
+            group_id: groupId 
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            Swal.close();
+            location.reload(); // รีโหลดหน้าเพื่อแสดงที่นั่งใหม่
+        } else {
+            Swal.fire('Error', data.message || 'ไม่สามารถเพิ่มได้', 'error');
+        }
+    });
+}
+// function addNewGuest(groupId) {
+//     // Swal.fire({ title: 'กำลังเพิ่มที่นั่ง...', didOpen: () => Swal.showLoading() });
+//     // ส่ง request ไปที่ api
+//     fetch('api_plan_manager.php', {
+//         method: 'POST',
+//         headers: {
+//             'Content-Type': 'application/json'
+//         },
+//         body: JSON.stringify({
+//             action: 'add_guest',
+//             id: <?php echo $plan_id; ?>,  // ต้องส่ง Plan ID ไปด้วยเพื่อเช็คสิทธิ์
+//             group_id: groupId
+//         })
+//     })
+//     .then(response => response.json())
+//     .then(data => {
+//         if (data.success) {
+//             // สำคัญ! ต้องรีโหลดหน้าจอเพื่อให้ PHP วาดที่นั่งใหม่ขึ้นมา
+//             location.reload(); 
+//         } else {
+//             alert('เกิดข้อผิดพลาด: ' + (data.message || 'ไม่สามารถเพิ่มที่นั่งได้'));
+//         }
+//     })
+//     .catch(error => {
+//         console.error('Error:', error);
+//         alert('เกิดข้อผิดพลาดในการเชื่อมต่อ');
+//     });
+// }
+// ฟังก์ชันลบคน (เรียกใช้ตอนกดลบ)
+function deleteGuest(guestId) {
+    Swal.fire({
+        title: 'ยืนยันการลบ?',
+        text: "ที่นั่งนี้จะหายไปทันที",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        confirmButtonText: 'ลบทิ้ง',
+        cancelButtonText: 'ยกเลิก'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            fetch('api_plan_manager.php', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ 
+                    action: 'delete_guest', 
+                    id: <?php echo $plan_id; ?>, 
+                    guest_id: guestId 
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    // ลบ Element ออกจากหน้าจอทันที หรือ Reload
+                    location.reload();
+                } else {
+                    Swal.fire('Error', 'ลบไม่สำเร็จ', 'error');
+                }
+            });
+        }
+    });
+}
+
+// ตัวแปรเก็บ ID ที่กำลังแก้ไข
+let currentEditingGuestId = 0;
+let currentGuestIdToDelete = 0;
+function editGuest(id, name, role, ...others) {
+    currentEditingGuestId = id; // จำ ID ไว้
+    // ... logic เดิมที่ set ค่าใส่ form ...
+    var myModal = new bootstrap.Modal(document.getElementById('editGuestModal'));
+    myModal.show();
+}
+
+// function confirmDeleteGuest() {
+//     if(currentEditingGuestId != 0) {
+//         deleteGuest(currentEditingGuestId); // เรียกฟังก์ชันลบที่เราเขียนไว้ข้างบน
+//     }
+// }
+function confirmDeleteGuest() {
+    // 1. เช็คว่ามี ID ไหม
+    if (!currentGuestIdToDelete || currentGuestIdToDelete == 0) {
+        Swal.fire('Error', 'ไม่พบรหัสที่นั่ง', 'error');
+        return;
+    }
+
+    // 2. ถามยืนยัน
+    Swal.fire({
+        title: 'ยืนยันการลบ?',
+        text: "ข้อมูลและรูปภาพจะหายไปถาวร",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        confirmButtonText: 'ลบทิ้ง',
+        cancelButtonText: 'ยกเลิก'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            
+            // 3. ส่งข้อมูลไป API
+            fetch('api_plan_manager.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    action: 'delete_guest', 
+                    id: <?php echo $plan_id; ?>, // ต้องส่ง Plan ID ไปเช็คสิทธิ์
+                    guest_id: currentGuestIdToDelete // ID ที่นั่งที่จะลบ
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload(); // ลบเสร็จรีโหลดหน้าจอ
+                } else {
+                    Swal.fire('ลบไม่สำเร็จ', data.message || 'Error', 'error');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                Swal.fire('Error', 'เกิดข้อผิดพลาดในการเชื่อมต่อ', 'error');
+            });
+        }
+    });
+}
+// ฟังก์ชันปรับขนาด Grid (จำนวนคอลัมน์)
+function updateGridSize(newSize) {
+    if(newSize < 5) return; // กันค่าน้อยเกินไป
+
+    // 1. เปลี่ยน CSS หน้าจอทันที (ไม่ต้องรอรีโหลด)
+    const gridContainer = document.querySelector('.seat-grid'); // หรือ ID ของ div ที่คลุมที่นั่ง
+    if (gridContainer) {
+        gridContainer.style.gridTemplateColumns = `repeat(${newSize}, 1fr)`;
+    }
+
+    // 2. ส่งค่าไปบันทึกในฐานข้อมูล
+    fetch('api_plan_manager.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            action: 'update_settings',
+            id: <?php echo $plan_id; ?>,
+            seats_per_row: newSize
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if(!data.success) {
+            alert('บันทึกค่าไม่สำเร็จ');
+        } else {
+            console.log('Grid updated to ' + newSize);
+        }
+    });
+}
 </script>
 
 </body>
