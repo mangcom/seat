@@ -294,12 +294,13 @@ $colorPalette = [
     <div class="mt-3">    
         <button onclick="savePositions()" class="btn btn-success btn-sm w-100 mb-2">💾 บันทึกตำแหน่ง</button>
     </div>
+    <?php endif; ?>
     <div class="d-inline-flex align-items-center bg-white border rounded px-2 ms-2" style="height: 38px;">
         <i class="bi bi-zoom-out text-secondary small"></i>
             <input type="range" class="form-range mx-2" min="30" max="80" value="50" id="zoomSlider" style="width: 100px; cursor: pointer;">
         <i class="bi bi-zoom-in text-secondary small"></i>
     </div>
-    <?php endif; ?>
+    
     <div class="dropdown d-inline-block ms-2 w-100">
         <button class="btn btn-outline-dark dropdown-toggle" type="button" data-bs-toggle="dropdown">
             <i class="bi bi-printer"></i> พิมพ์สติกเกอร์
@@ -309,11 +310,13 @@ $colorPalette = [
             <li><a class="dropdown-item" href="#" onclick="toggleSelectMode()">เลือกพิมพ์บางคน...</a></li>
         </ul>
     </div>
+    <?php if ($can_edit): ?>
     <div class="mt-3">
         <button class="btn btn-info btn-sm w-100 mb-2" onclick="openStructureModal()">
         <i class="bi bi-gear-fill"></i> จัดจำนวนที่นั่ง
         </button>
     </div>
+    <?php endif; ?>
 
     <div class="mt-3">
         <a href="index.php" class="btn btn-outline-secondary btn-sm w-100 mb-2">กลับหน้าหลัก</a>
