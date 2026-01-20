@@ -240,20 +240,28 @@ $colorPalette = [
         }
         #tooltip-name { font-size: 18px; font-weight: 400; margin-bottom: 5px; color: #333; }
         #tooltip-role { font-size: 16px; font-weight: 700; color: #000; }
-
-        .floating-toolbar { 
-    position: fixed; 
-    top: 50%;                  /* ให้ขอบบนเริ่มที่ 50% ของจอ */
-    right: 20px;               /* ห่างขอบขวา 20px */
-    transform: translateY(-50%); /* ดึงกลับขึ้นไปครึ่งหนึ่งของความสูงกล่อง เพื่อให้มันอยู่กลางเป๊ะ */
+/* กำหนดสไตล์ให้ Toolbar */
+.floating-toolbar {
+    position: fixed;
+    top: 140px; /* อยู่ต่ำกว่าปุ่มกดนิดหน่อย */
+    right: 20px;
+    width: 260px; /* ความกว้างเมนู */
+    z-index: 1050;
     
-    background: white; 
-    padding: 15px; 
-    border-radius: 8px; 
-    box-shadow: 0 5px 15px rgba(0,0,0,0.2); 
-    z-index: 999; 
-    width: 200px;
+    /* Animation settings */
+    opacity: 0;           /* เริ่มต้นจางหาย */
+    visibility: hidden;   /* เริ่มต้นมองไม่เห็นกดไม่ได้ */
+    transform: translateX(20px); /* ขยับไปทางขวานิดหน่อย */
+    transition: all 0.3s ease-in-out; /* เอฟเฟกต์นุ่มนวล */
 }
+
+/* คลาสที่จะถูกเติมเมื่อกดเปิด (Show) */
+.floating-toolbar.active {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(0);
+}
+
 
         .stage-box {
     width: 80%;               /* ความกว้าง 80% ของพื้นที่ */
@@ -285,41 +293,56 @@ $colorPalette = [
     <div id="tooltip-role"></div>
 </div>
 
-<div class="floating-toolbar">
-    <h6 class="fw-bold"><i class="bi bi-tools"></i> เครื่องมือ</h6>
-    <div class="mt-3">
-        <button onclick="exportImage()" class="btn btn-primary btn-sm w-100 mb-2"><i class="bi bi-camera"></i> บันทึกภาพ</button>
+<button id="toolbarToggleBtn" class="btn btn-primary rounded-circle shadow" onclick="toggleToolbar()" 
+    style="position: fixed; top: 80px; right: 20px; width: 50px; height: 50px; z-index: 1060; display: flex; align-items: center; justify-content: center;">
+    <i class="bi bi-tools fs-5"></i>
+</button>
+
+<div class="floating-toolbar shadow p-3 bg-white rounded" id="mainToolbar">
+    
+    <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
+        <h6 class="fw-bold m-0"><i class="bi bi-tools"></i> เครื่องมือ</h6>
+        <button type="button" class="btn-close small" onclick="toggleToolbar()"></button>
     </div>
+
+    <div>
+        <button onclick="exportImage()" class="btn btn-primary btn-sm w-100 mb-2">
+            <i class="bi bi-camera"></i> บันทึกภาพ
+        </button>
+    </div>
+
     <?php if ($can_edit): ?>
-    <div class="mt-3">    
+    <div>    
         <button onclick="savePositions()" class="btn btn-success btn-sm w-100 mb-2">💾 บันทึกตำแหน่ง</button>
     </div>
     <?php endif; ?>
-    <div class="d-inline-flex align-items-center bg-white border rounded px-2 ms-2" style="height: 38px;">
+
+    <div class="d-flex align-items-center bg-light border rounded px-2 mb-2" style="height: 38px;">
         <i class="bi bi-zoom-out text-secondary small"></i>
-            <input type="range" class="form-range mx-2" min="30" max="80" value="50" id="zoomSlider" style="width: 100px; cursor: pointer;">
+        <input type="range" class="form-range mx-2" min="30" max="80" value="50" id="zoomSlider" style="cursor: pointer;">
         <i class="bi bi-zoom-in text-secondary small"></i>
     </div>
     
-    <div class="dropdown d-inline-block ms-2 w-100">
-        <button class="btn btn-outline-dark dropdown-toggle" type="button" data-bs-toggle="dropdown">
+    <div class="dropdown w-100 mb-2">
+        <button class="btn btn-outline-dark dropdown-toggle w-100 btn-sm" type="button" data-bs-toggle="dropdown">
             <i class="bi bi-printer"></i> พิมพ์สติกเกอร์
         </button>
-        <ul class="dropdown-menu">
+        <ul class="dropdown-menu w-100">
             <li><a class="dropdown-item" href="#" onclick="printAll()">พิมพ์ทั้งหมด (ทั้งผัง)</a></li>
             <li><a class="dropdown-item" href="#" onclick="toggleSelectMode()">เลือกพิมพ์บางคน...</a></li>
         </ul>
     </div>
+
     <?php if ($can_edit): ?>
-    <div class="mt-3">
+    <div>
         <button class="btn btn-info btn-sm w-100 mb-2" onclick="openStructureModal()">
         <i class="bi bi-gear-fill"></i> จัดจำนวนที่นั่ง
         </button>
     </div>
     <?php endif; ?>
 
-    <div class="mt-3">
-        <a href="index.php" class="btn btn-outline-secondary btn-sm w-100 mb-2">กลับหน้าหลัก</a>
+    <div>
+        <a href="index.php" class="btn btn-outline-secondary btn-sm w-100">กลับหน้าหลัก</a>
     </div>
 </div>
 
