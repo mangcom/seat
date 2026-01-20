@@ -1331,6 +1331,29 @@ function updateGridSize(newSize) {
         }
     });
 }
+
+// ฟังก์ชัน เปิด/ปิด Toolbar
+function toggleToolbar() {
+    const toolbar = document.getElementById('mainToolbar');
+    const btn = document.getElementById('toolbarToggleBtn');
+    
+    // สลับคลาส active (ถ้ามีก็เอาออก ถ้าไม่มีก็ใส่)
+    toolbar.classList.toggle('active');
+
+    // เปลี่ยนไอคอนปุ่ม (Optional: ให้ดูเท่ขึ้น)
+    const icon = btn.querySelector('i');
+    if (toolbar.classList.contains('active')) {
+        // ถ้าเปิดอยู่ ให้เป็นปุ่ม X
+        icon.classList.remove('bi-tools');
+        icon.classList.add('bi-x-lg');
+        btn.classList.replace('btn-primary', 'btn-secondary'); // เปลี่ยนสีปุ่ม
+    } else {
+        // ถ้าปิดอยู่ ให้เป็นรูปเครื่องมือ
+        icon.classList.remove('bi-x-lg');
+        icon.classList.add('bi-tools');
+        btn.classList.replace('btn-secondary', 'btn-primary'); // คืนสีปุ่ม
+    }
+}
 </script>
 
 </body>
