@@ -447,6 +447,41 @@ $colorPalette = [
             letter-spacing: 2px;
             text-transform: uppercase;
         }
+
+        /* ใส่ใน <style> */
+
+        /* Animation สำหรับ Indicator */
+        @keyframes pulse-red {
+            0% {
+                box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7);
+                transform: scale(1);
+            }
+
+            70% {
+                box-shadow: 0 0 0 20px rgba(220, 53, 69, 0);
+                transform: scale(1.1);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(220, 53, 69, 0);
+                transform: scale(1);
+            }
+        }
+
+        .highlight-target {
+            animation: pulse-red 2s infinite;
+            /* กระพริบตลอดเวลา */
+            border: 3px solid #dc3545 !important;
+            /* ขอบสีแดงเข้ม */
+            z-index: 1050 !important;
+            /* ให้อยู่บนสุด */
+            position: relative;
+        }
+
+        /* เพิ่มให้แน่ใจว่า scroll แล้วเห็นชัดๆ */
+        html {
+            scroll-behavior: smooth;
+        }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
@@ -550,28 +585,37 @@ $colorPalette = [
                 $sRole = htmlspecialchars($g['role']);
                 $imgSrc = $g['image_path'] ? 'uploads/' . $g['image_path'] : '';
 
+                // --- จุดที่แก้ไข: เพิ่ม class "seat-item" และ data-* ต่างๆ ให้ครบ ---
                 echo '
-    <div class="seat ' . $sofaClass . ' ' . $statusClass . '" 
+        <div class="seat seat-item ' . $sofaClass . ' ' . $statusClass . '" 
             style="' . $style . '" 
+            
+            id="seat-guest-' . $g['id'] . '"
             data-id="' . $g['id'] . '" 
+            data-guest-id="' . $g['id'] . '"
+            
+            data-seat-no="' . $seatNo . '"
+            data-row-no="' . $rowNo . '"
+            data-status="' . $g['status'] . '"
+
             onclick="openEditModal(this)"
             onmouseenter="showTooltip(this)" 
             onmousemove="moveTooltip(event)" 
             onmouseleave="hideTooltip()">
         
-        ' . ($rowNo ? '<div class="seat-badge-row">R' . $rowNo . '</div>' : '') . '
-        ' . ($seatNo ? '<div class="seat-badge-num">#' . $seatNo . '</div>' : '') . '
+            ' . ($rowNo ? '<div class="seat-badge-row">R' . $rowNo . '</div>' : '') . '
+            ' . ($seatNo ? '<div class="seat-badge-num">#' . $seatNo . '</div>' : '') . '
 
-        <input type="hidden" class="d-name" value="' . $sName . '">
-        <input type="hidden" class="d-role" value="' . $sRole . '">
-        <input type="hidden" class="d-status" value="' . $g['status'] . '">
-        <input type="hidden" class="d-img" value="' . $g['image_path'] . '">
-        
-        ' . ($imgSrc ? '<img src="' . $imgSrc . '" class="seat-img">' : '<div class="seat-img d-flex align-items-center justify-content-center text-muted"><i class="bi bi-person"></i></div>') . '
-        
-        <div class="seat-name display-name">' . $g['name'] . '</div>
-        <div class="seat-role display-role">' . $g['role'] . '</div>
-    </div>';
+            <input type="hidden" class="d-name" value="' . $sName . '">
+            <input type="hidden" class="d-role" value="' . $sRole . '">
+            <input type="hidden" class="d-status" value="' . $g['status'] . '">
+            <input type="hidden" class="d-img" value="' . $g['image_path'] . '">
+            
+            ' . ($imgSrc ? '<img src="' . $imgSrc . '" class="seat-img">' : '<div class="seat-img d-flex align-items-center justify-content-center text-muted"><i class="bi bi-person"></i></div>') . '
+            
+            <div class="seat-name display-name">' . $g['name'] . '</div>
+            <div class="seat-role display-role">' . $g['role'] . '</div>
+        </div>';
             }
 
             function renderFullRow($guestsInRow, $groupId, $rowIndex, $color, $displayNumber)
@@ -1577,6 +1621,34 @@ $colorPalette = [
                 btn.classList.replace('btn-secondary', 'btn-primary'); // คืนสีปุ่ม
             }
         }
+        // เพิ่มส่วนนี้ต่อท้ายสุด ก่อนปิด </body>
+        document.addEventListener("DOMContentLoaded", function() {
+            // 1. รับค่า highlight จาก URL (เช่น interactive_map.php?id=1&highlight=55)
+            const urlParams = new URLSearchParams(window.location.search);
+            const highlightId = urlParams.get('highlight');
+
+            if (highlightId) {
+                // 2. ค้นหา Element ที่มี data-guest-id ตรงกัน
+                // หมายเหตุ: ต้องแก้ HTML ด้านบนให้มี attribute data-guest-id ตามที่บอกในข้อ 3.1 ก่อน
+                const targetSeat = document.querySelector(`.seat-item[data-guest-id="${highlightId}"]`);
+
+                if (targetSeat) {
+                    // 3. เลื่อนหน้าจอไปหา (Scroll to view)
+                    setTimeout(() => {
+                        targetSeat.scrollIntoView({
+                            behavior: "smooth",
+                            block: "center"
+                        });
+                    }, 500); // หน่วงเวลานิดนึงรอให้หน้าเว็บ render เสร็จ
+
+                    // 4. ใส่ Class เพื่อให้กระพริบ
+                    targetSeat.classList.add('highlight-target');
+
+                    // Optional: คลิกที่นั่งนั้นให้อัตโนมัติเลย (เพื่อให้ Modal เด้งขึ้นมา)
+                    // targetSeat.click(); 
+                }
+            }
+        });
     </script>
 
 </body>

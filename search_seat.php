@@ -14,7 +14,7 @@ if (isset($_GET['ajax_search'])) {
     }
 
     // SQL: เพิ่ม g.image_path เพื่อเอารูปมาแสดง
-    $sql = "SELECT g.name, g.role, g.sort_order, g.status, g.image_path,
+    $sql = "SELECT g.id, g.name, g.role, g.sort_order, g.status, g.image_path,
                    pg.name as row_name, pg.zone_type
             FROM guests g
             JOIN plan_groups pg ON g.group_id = pg.id
@@ -222,50 +222,53 @@ $target_id = $_GET['id'] ?? 0;
 
             let html = '';
             data.forEach(g => {
-                const seatNo = parseInt(g.sort_order) + 1; // ลำดับที่
-                const rowName = g.row_name; // ชื่อแถว (ตามที่ตั้งในผัง)
-
-                // --- ข้อความระบุตำแหน่งแบบเต็ม ---
+                const seatNo = parseInt(g.sort_order) + 1;
+                const rowName = g.row_name;
                 const locationText = `แถว ${rowName} ลำดับที่ ${seatNo}`;
 
-                // --- จัดการรูปภาพ ---
-                let imgHtml = '';
-                if (g.image_path) {
-                    imgHtml = `<img src="uploads/${g.image_path}" class="profile-img me-3">`;
-                } else {
-                    imgHtml = `<div class="me-3"><i class="bi bi-person-circle profile-icon"></i></div>`;
-                }
+                // รูปภาพ
+                let imgHtml = g.image_path ?
+                    `<img src="uploads/${g.image_path}" class="profile-img me-3">` :
+                    `<div class="me-3"><i class="bi bi-person-circle profile-icon"></i></div>`;
 
-                // ชื่อโซน
-                let zoneName = 'ทั่วไป';
-                if (g.zone_type === 'exec') zoneName = 'ผู้บริหาร';
-                else if (g.zone_type === 'part') zoneName = 'ผู้เข้าร่วม';
-
+                let zoneName = g.zone_type === 'exec' ? 'ผู้บริหาร' : (g.zone_type === 'part' ? 'ผู้เข้าร่วม' : 'ทั่วไป');
                 let statusBadge = g.status === 'checked_in' ? '<span class="badge bg-success ms-2">มาแล้ว</span>' : '';
 
+                // --- จุดสำคัญ: สร้าง Link ไปยังหน้า Map พร้อมแนบ id คน (g.id) ไปด้วย ---
+                // สมมติว่าใน SQL query คุณ select g.id มาด้วย (ถ้ายังไม่มีต้องไปเพิ่มใน SQL ข้างบน)
+                // ตรวจสอบว่าใน SQL บรรทัดที่ 14 มี "g.id" หรือยัง? ถ้ายังให้เติม "SELECT g.id, g.name..."
+
+                /* SQL ใน search_seat.php บรรทัดบนสุด ต้องเป็น:
+                   SELECT g.id, g.name, g.role ... (เพิ่ม g.id เข้าไป)
+                */
+
+                const planId = document.getElementById('planSelect').value;
+                const linkUrl = `interactive_map.php?id=${planId}&highlight=${g.id}`; // ส่ง guest_id ไป highlight
+
                 html += `
-                <div class="list-group-item p-3 border-0 border-bottom bg-white hover-shadow">
-                    <div class="row align-items-center">
-                        
-                        <div class="col-8 d-flex align-items-center">
-                            ${imgHtml}
-                            <div>
-                                <h5 class="fw-bold text-primary mb-1 text-truncate">${g.name} ${statusBadge}</h5>
-                                <div class="text-secondary small mb-2 text-truncate" style="max-width: 250px;">
-                                    <i class="bi bi-briefcase"></i> ${g.role || '-'}
+                <a href="${linkUrl}" class="text-decoration-none text-dark"> <div class="list-group-item p-3 border-0 border-bottom bg-white hover-shadow">
+                        <div class="row align-items-center">
+                            
+                            <div class="col-8 d-flex align-items-center">
+                                ${imgHtml}
+                                <div>
+                                    <h5 class="fw-bold text-primary mb-1 text-truncate">${g.name} ${statusBadge}</h5>
+                                    <div class="text-secondary small mb-2 text-truncate" style="max-width: 250px;">
+                                        <i class="bi bi-briefcase"></i> ${g.role || '-'}
+                                    </div>
+                                    
+                                    <span class="zone-label">โซน: <span class="zone-value">${zoneName}</span></span>
                                 </div>
-                                
-                                <span class="zone-label">โซน: <span class="zone-value">${zoneName}</span></span>
                             </div>
-                        </div>
 
-                        <div class="col-4 text-end d-flex flex-column align-items-end justify-content-center">
-                            <div class="seat-badge mb-2 shadow-sm">${seatNo}</div>
-                            <div class="seat-location-text text-nowrap">${locationText}</div>
-                        </div>
+                            <div class="col-4 text-end d-flex flex-column align-items-end justify-content-center">
+                                <div class="seat-badge mb-2 shadow-sm">${seatNo}</div>
+                                <div class="seat-location-text text-nowrap">${locationText}</div>
+                            </div>
 
+                        </div>
                     </div>
-                </div>`;
+                </a>`;
             });
             resultsList.innerHTML = html;
         }
