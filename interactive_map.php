@@ -496,6 +496,19 @@ $colorPalette = [
             z-index: 10000 !important;
             /* Bootstrap Modal ปกติจะ 1055 แต่เผื่อไว้ */
         }
+
+        .selected-print {
+            border: 3px solid #28a745 !important;
+            /* ขอบสีเขียวหนาๆ */
+            box-shadow: 0 0 10px rgba(40, 167, 69, 0.5) !important;
+            /* เงาเรืองแสง */
+            transform: scale(1.15) !important;
+            /* ขยายใหญ่ขึ้น */
+            z-index: 999 !important;
+            /* ลอยทับเพื่อน */
+            background-color: #fff !important;
+            /* พื้นหลังขาวให้อ่านง่าย */
+        }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
@@ -542,10 +555,54 @@ $colorPalette = [
             <button class="btn btn-outline-dark dropdown-toggle w-100 btn-sm" type="button" data-bs-toggle="dropdown">
                 <i class="bi bi-printer"></i> พิมพ์สติกเกอร์
             </button>
-            <ul class="dropdown-menu w-100">
+            <ul class="dropdown-menu w-100 shadow" style="max-height: 300px; overflow-y: auto;">
+
+                <li>
+                    <h6 class="dropdown-header text-primary fw-bold">🅰️ แบบตัวใหญ่ (1 คอลัมน์)</h6>
+                </li>
+                <li>
+                    <a class="dropdown-item" href="#" onclick="printAll('large', 'print_stickers.php')">
+                        🖨️ พิมพ์ทั้งหมด
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item" href="#" onclick="printSelected('large', 'print_stickers.php')">
+                        ✅ พิมพ์เฉพาะที่เลือก
+                    </a>
+                </li>
+
+                <li>
+                    <hr class="dropdown-divider">
+                </li>
+
+                <li>
+                    <h6 class="dropdown-header text-success fw-bold">🅱️ แบบเดิม (2 คอลัมน์)</h6>
+                </li>
+                <li>
+                    <a class="dropdown-item" href="#" onclick="printAll('std', 'print_stickers2c.php')">
+                        🖨️ พิมพ์ทั้งหมด
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item" href="#" onclick="printSelected('std', 'print_stickers2c.php')">
+                        ✅ พิมพ์เฉพาะที่เลือก
+                    </a>
+                </li>
+
+                <li>
+                    <hr class="dropdown-divider">
+                </li>
+
+                <li>
+                    <a class="dropdown-item text-muted small" href="#" onclick="toggleSelectMode()">
+                        👆 เปิด/ปิด โหมดจิ้มเลือก
+                    </a>
+                </li>
+            </ul>
+            <!-- <ul class="dropdown-menu w-100">
                 <li><a class="dropdown-item" href="#" onclick="printAll()">พิมพ์ทั้งหมด (ทั้งผัง)</a></li>
                 <li><a class="dropdown-item" href="#" onclick="toggleSelectMode()">เลือกพิมพ์บางคน...</a></li>
-            </ul>
+            </ul> -->
         </div>
 
         <?php if ($can_edit): ?>
@@ -1264,32 +1321,48 @@ $colorPalette = [
 
         let isSelectionMode = false;
         let selectedSeats = new Set();
+        var isSelectMode = false;
 
-        // 1. เริ่ม/หยุด โหมดเลือก
+        // 2. ฟังก์ชันเปิด/ปิด โหมดเลือก
         function toggleSelectMode() {
-            isSelectionMode = !isSelectionMode;
-            selectedSeats.clear();
-            updateSelectionUI();
+            isSelectMode = !isSelectMode; // สลับสถานะ จริง/เท็จ
 
-            const toolbar = document.getElementById('print-toolbar');
-            const seats = document.querySelectorAll('.seat:not(.ghost)');
+            const seats = document.querySelectorAll('.seat'); // หาที่นั่งทั้งหมด
 
-            if (isSelectionMode) {
-                toolbar.style.display = 'flex';
-                seats.forEach(el => {
-                    el.classList.add('selecting');
-                    // ปิด onclick เดิมชั่วคราว (แก้ไข Modal) โดยการดัก Event ที่ Capture Phase
-                    el.addEventListener('click', seatSelectionHandler, true);
+            if (isSelectMode) {
+                // --- กรณีเปิดโหมด ---
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    icon: 'info',
+                    title: '🟢 เปิดโหมดเลือก',
+                    text: 'จิ้มที่นั่งที่ต้องการพิมพ์ (สามารถจิ้มซ้ำเพื่อยกเลิก)',
+                    showConfirmButton: false,
+                    timer: 3000
                 });
-                // ปิด Sortable ชั่วคราว (ถ้าทำได้) หรือแจ้งเตือน
+                document.body.style.cursor = 'crosshair'; // เปลี่ยน cursor เป็นรูปเป้าเล็ง
             } else {
-                toolbar.style.display = 'none';
-                seats.forEach(el => {
-                    el.classList.remove('selecting', 'selected');
-                    el.removeEventListener('click', seatSelectionHandler, true);
+                // --- กรณีปิดโหมด ---
+                // ล้างค่าที่เลือกไว้ทั้งหมด
+                seats.forEach(s => {
+                    s.classList.remove('selected-print');
+                    s.style.border = '';
+                    s.style.transform = '';
+                });
+
+                document.body.style.cursor = 'default';
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    icon: 'success',
+                    title: '🔴 ปิดโหมดเลือก',
+                    showConfirmButton: false,
+                    timer: 1500
                 });
             }
         }
+        // 1. เริ่ม/หยุด โหมดเลือก
+
 
         // 2. จัดการการคลิก (Select/Deselect)
         function seatSelectionHandler(e) {
@@ -1363,9 +1436,6 @@ $colorPalette = [
             const input = document.createElement('input');
             input.type = 'hidden';
             input.name = 'json_data'; // หมายเหตุ: PHP รับแบบ Raw POST body ก็ได้ หรือรับแบบ form field ก็ได้
-            // ในโค้ด PHP ด้านบนผมเขียนรับ raw body แต่ถ้าส่งแบบ form ปกติ ต้องแก้ PHP นิดหน่อย
-            // เพื่อความง่าย ขอเปลี่ยนวิธีส่งเป็น fetch + blob หรือแก้ PHP ให้รับ form
-            // เอาวิธี Form + JSON String ดีกว่า ง่ายสุด
 
             // ** แก้ PHP ด้านบนนิดนึง ให้รับ $_POST['json_data'] ได้ด้วย **
         }
@@ -1388,26 +1458,54 @@ $colorPalette = [
             document.body.removeChild(form);
         }
 
-        function printAll() {
-            const guests = gatherSeatData(false); // เอาทั้งหมด
-            const title = document.getElementById('pageTitle').innerText;
-            postData('print_stickers.php', {
-                title: title,
-                guests: guests
-            });
+        // ฟังก์ชันสั่งพิมพ์ (ทั้งหมด)
+        function printAll(mode, targetFile = 'print_stickers.php') {
+            // เลือก .seat ทั้งหมด
+            const guests = collectGuests(document.querySelectorAll('.seat'));
+            if (guests.length === 0) return Swal.fire('ไม่พบข้อมูล', 'ไม่มีที่นั่งที่มีคนนั่ง', 'warning');
+            sendToPrintPage(guests, mode, targetFile);
         }
 
-        function printSelected() {
-            const guests = gatherSeatData(true); // เอาเฉพาะที่เลือก
-            const title = document.getElementById('pageTitle').innerText;
-            postData('print_stickers.php', {
-                title: title,
-                guests: guests
+        // ฟังก์ชันสั่งพิมพ์ (เฉพาะที่เลือก)
+        function printSelected(mode, targetFile = 'print_stickers.php') {
+            const selectedSeats = document.querySelectorAll('.seat.selected-print');
+            if (selectedSeats.length === 0) {
+                Swal.fire({
+                        title: 'ยังไม่ได้เลือก',
+                        text: 'กรุณาเปิดโหมดเลือกก่อน',
+                        icon: 'info'
+                    })
+                    .then(() => {
+                        if (!isSelectMode) toggleSelectMode();
+                    });
+                return;
+            }
+            const guests = collectGuests(selectedSeats);
+            sendToPrintPage(guests, mode, targetFile);
+        }
+
+        // ฟังก์ชันส่ง Form ไปหน้าพิมพ์
+        function sendToPrintPage(guestsData, mode, targetFile) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = targetFile;
+            form.target = '_blank';
+
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'payload';
+            input.value = JSON.stringify({
+                title: document.title,
+                guests: guestsData,
+                mode: mode
             });
 
-            // ออกจากโหมดเลือกหลังสั่งพิมพ์
-            toggleSelectMode();
+            form.appendChild(input);
+            document.body.appendChild(form);
+            form.submit();
+            document.body.removeChild(form);
         }
+
         // --- ส่วนที่เพิ่ม: ฟังก์ชันปรับขนาด (Zoom) ---
         const zoomSlider = document.getElementById('zoomSlider');
         if (zoomSlider) {
@@ -1455,34 +1553,6 @@ $colorPalette = [
                     }
                 });
         }
-        // function addNewGuest(groupId) {
-        //     // Swal.fire({ title: 'กำลังเพิ่มที่นั่ง...', didOpen: () => Swal.showLoading() });
-        //     // ส่ง request ไปที่ api
-        //     fetch('api_plan_manager.php', {
-        //         method: 'POST',
-        //         headers: {
-        //             'Content-Type': 'application/json'
-        //         },
-        //         body: JSON.stringify({
-        //             action: 'add_guest',
-        //             id: <?php echo $plan_id; ?>,  // ต้องส่ง Plan ID ไปด้วยเพื่อเช็คสิทธิ์
-        //             group_id: groupId
-        //         })
-        //     })
-        //     .then(response => response.json())
-        //     .then(data => {
-        //         if (data.success) {
-        //             // สำคัญ! ต้องรีโหลดหน้าจอเพื่อให้ PHP วาดที่นั่งใหม่ขึ้นมา
-        //             location.reload(); 
-        //         } else {
-        //             alert('เกิดข้อผิดพลาด: ' + (data.message || 'ไม่สามารถเพิ่มที่นั่งได้'));
-        //         }
-        //     })
-        //     .catch(error => {
-        //         console.error('Error:', error);
-        //         alert('เกิดข้อผิดพลาดในการเชื่อมต่อ');
-        //     });
-        // }
         // ฟังก์ชันลบคน (เรียกใช้ตอนกดลบ)
         function deleteGuest(guestId) {
             Swal.fire({
@@ -1530,11 +1600,6 @@ $colorPalette = [
             myModal.show();
         }
 
-        // function confirmDeleteGuest() {
-        //     if(currentEditingGuestId != 0) {
-        //         deleteGuest(currentEditingGuestId); // เรียกฟังก์ชันลบที่เราเขียนไว้ข้างบน
-        //     }
-        // }
         function confirmDeleteGuest() {
             // 1. เช็คว่ามี ID ไหม
             if (!currentGuestIdToDelete || currentGuestIdToDelete == 0) {
@@ -1616,50 +1681,93 @@ $colorPalette = [
         // ฟังก์ชัน เปิด/ปิด Toolbar
         function toggleToolbar() {
             const toolbar = document.getElementById('mainToolbar');
-            const btn = document.getElementById('toolbarToggleBtn');
-
-            // สลับคลาส active (ถ้ามีก็เอาออก ถ้าไม่มีก็ใส่)
             toolbar.classList.toggle('active');
-
-            // เปลี่ยนไอคอนปุ่ม (Optional: ให้ดูเท่ขึ้น)
-            const icon = btn.querySelector('i');
-            if (toolbar.classList.contains('active')) {
-                // ถ้าเปิดอยู่ ให้เป็นปุ่ม X
-                icon.classList.remove('bi-tools');
-                icon.classList.add('bi-x-lg');
-                btn.classList.replace('btn-primary', 'btn-secondary'); // เปลี่ยนสีปุ่ม
-            } else {
-                // ถ้าปิดอยู่ ให้เป็นรูปเครื่องมือ
-                icon.classList.remove('bi-x-lg');
-                icon.classList.add('bi-tools');
-                btn.classList.replace('btn-secondary', 'btn-primary'); // คืนสีปุ่ม
-            }
         }
-        // เพิ่มส่วนนี้ต่อท้ายสุด ก่อนปิด </body>
+        // ใช้ addEventListener แบบนี้จะชัวร์กว่า onclick
+        document.addEventListener('click', function(e) {
+            // ถ้าไม่ได้เปิดโหมดเลือก ให้จบการทำงานทันที (ปล่อยให้คลิกเปิด Modal ตามปกติ)
+            if (!isSelectMode) return;
+
+            // ค้นหาว่าสิ่งที่คลิก คือ .seat หรือไม่ (รวมถึงลูกหลานของมัน)
+            const seat = e.target.closest('.seat');
+
+            // ถ้าเจอที่นั่ง และ ที่นั่งนั้นไม่ใช่ที่ว่าง/ที่ผี
+            if (seat && !seat.classList.contains('ghost') && !seat.classList.contains('status-empty')) {
+
+                // *** คำสั่งสำคัญ: ห้ามเปิด Modal แก้ไข ***
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+
+                // สลับ Class (เลือก/ไม่เลือก)
+                seat.classList.toggle('selected-print');
+
+                // Feedback เสียง หรือ Console (ถ้าต้องการ)
+                console.log('Toggle Seat:', seat.getAttribute('data-id'));
+            }
+        }, true); // true = ใช้ Capture Phase (ดักจับก่อน event อื่นเสมอ)
+
+        // ฟังก์ชันรวบรวมข้อมูลแขก (ตัวแก้ปัญหาหลัก)
+        function collectGuests(seatNodes) {
+            const data = [];
+            seatNodes.forEach(seat => {
+                // ข้ามที่นั่งว่าง หรือ ghost
+                if (!seat || seat.classList.contains('status-empty') || seat.classList.contains('ghost')) return;
+
+                // พยายามดึงข้อมูลจากหลายๆ ที่ (รองรับทั้งไฟล์เก่าและใหม่)
+                // 1. ชื่อ
+                let name = seat.getAttribute('data-name');
+                if (!name) name = seat.querySelector('.d-name')?.value; // ดึงจาก hidden input เดิม
+                if (!name) name = seat.querySelector('.seat-name')?.innerText;
+
+                // 2. ตำแหน่ง
+                let role = seat.getAttribute('data-role');
+                if (!role) role = seat.querySelector('.d-role')?.value; // ดึงจาก hidden input เดิม
+                if (!role) role = seat.querySelector('.seat-role')?.innerText;
+
+                // 3. เลขที่นั่ง (#)
+                let seatNo = seat.getAttribute('data-seat-no');
+                if (!seatNo) {
+                    let badge = seat.querySelector('.seat-badge-num');
+                    if (badge) seatNo = badge.innerText.replace('#', '');
+                }
+
+                // 4. แถว (R)
+                let rowNo = seat.getAttribute('data-row-no');
+                if (!rowNo) {
+                    let badge = seat.querySelector('.seat-badge-row');
+                    if (badge) rowNo = badge.innerText.replace('R', '');
+                }
+
+                if (name) {
+                    data.push({
+                        name: name.trim(),
+                        role: role ? role.trim() : '',
+                        seatNo: seatNo || '-',
+                        rowNo: rowNo || '-'
+                    });
+                }
+            });
+            return data;
+        }
+        // --- 3. ส่วนเสริมอื่นๆ (Scroll to Highlight) ---
         document.addEventListener("DOMContentLoaded", function() {
-            // 1. รับค่า highlight จาก URL (เช่น interactive_map.php?id=1&highlight=55)
             const urlParams = new URLSearchParams(window.location.search);
             const highlightId = urlParams.get('highlight');
-
             if (highlightId) {
-                // 2. ค้นหา Element ที่มี data-guest-id ตรงกัน
-                // หมายเหตุ: ต้องแก้ HTML ด้านบนให้มี attribute data-guest-id ตามที่บอกในข้อ 3.1 ก่อน
-                const targetSeat = document.querySelector(`.seat-item[data-guest-id="${highlightId}"]`);
+                // พยายามหาจาก ID หรือ Data Attribute
+                let targetSeat = document.getElementById('seat-guest-' + highlightId);
+                if (!targetSeat) targetSeat = document.querySelector(`.seat[data-id="${highlightId}"]`);
 
                 if (targetSeat) {
-                    // 3. เลื่อนหน้าจอไปหา (Scroll to view)
                     setTimeout(() => {
                         targetSeat.scrollIntoView({
                             behavior: "smooth",
                             block: "center"
                         });
-                    }, 500); // หน่วงเวลานิดนึงรอให้หน้าเว็บ render เสร็จ
-
-                    // 4. ใส่ Class เพื่อให้กระพริบ
+                    }, 500);
                     targetSeat.classList.add('highlight-target');
-
-                    // Optional: คลิกที่นั่งนั้นให้อัตโนมัติเลย (เพื่อให้ Modal เด้งขึ้นมา)
-                    // targetSeat.click(); 
+                    // targetSeat.style.animation = 'pulse-red 2s infinite'; // บังคับ Animation
                 }
             }
         });
