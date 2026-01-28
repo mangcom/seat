@@ -482,6 +482,20 @@ $colorPalette = [
         html {
             scroll-behavior: smooth;
         }
+
+        /* แก้ปัญหาที่นั่งบังเมนู: ดันเมนูให้ลอยเหนือทุกสิ่ง */
+        #mainToolbar {
+            z-index: 9999 !important;
+            /* ค่าสูงสุด เพื่อให้อยู่บนสุดเสมอ */
+            position: fixed;
+            /* ย้ำว่าเป็น fixed */
+        }
+
+        /* เพิ่มเติม: ป้องกัน Modal โดนบังด้วย (เผื่อไว้ครับ) */
+        .modal {
+            z-index: 10000 !important;
+            /* Bootstrap Modal ปกติจะ 1055 แต่เผื่อไว้ */
+        }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
