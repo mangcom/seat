@@ -1065,7 +1065,25 @@ $colorPalette = [
         const tooltipImg = document.getElementById('tooltip-img');
         const tooltipName = document.getElementById('tooltip-name');
         const tooltipRole = document.getElementById('tooltip-role');
+        // ฟังก์ชันแสดง Tooltip เมื่อเลื่อนเมาส์เข้ามที่นั่ง
+        // function showTooltip(el) {
+        //     if (el.classList.contains('status-empty')) return;
 
+        //     const name = el.querySelector('.d-name').value;
+        //     const role = el.querySelector('.d-role').value;
+        //     const imgPath = el.querySelector('.d-img').value;
+
+        //     tooltipName.innerText = name;
+        //     tooltipRole.innerText = role;
+
+        //     if (imgPath && imgPath !== 'null' && imgPath !== '') {
+        //         tooltipImg.src = 'uploads/' + imgPath;
+        //         tooltipImg.style.display = 'inline-block';
+        //     } else {
+        //         tooltipImg.style.display = 'none';
+        //     }
+        //     tooltip.style.display = 'block';
+        // }
         function showTooltip(el) {
             if (el.classList.contains('status-empty')) return;
 
@@ -1075,6 +1093,14 @@ $colorPalette = [
 
             tooltipName.innerText = name;
             tooltipRole.innerText = role;
+
+            // --- ส่วนที่เพิ่ม: บังคับจัดรูปแบบตรงนี้เลยครับ ---
+            tooltipName.style.fontWeight = 'bold'; // สั่งให้ชื่อเป็นตัวหนา
+            tooltipName.style.fontSize = '1.1rem'; // (แถม) ขยายชื่อให้ใหญ่นิดนึง
+
+            tooltipRole.style.fontWeight = 'normal'; // สั่งให้ตำแหน่งเป็นตัวปกติ
+            tooltipRole.style.color = '#0f0f0f'; // (แถม) ปรับสีตำแหน่งให้จางลงนิดนึงจะได้ไม่แข่งกับชื่อ
+            // ----------------------------------------------
 
             if (imgPath && imgPath !== 'null' && imgPath !== '') {
                 tooltipImg.src = 'uploads/' + imgPath;
